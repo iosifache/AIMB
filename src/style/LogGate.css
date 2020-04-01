@@ -1,0 +1,92 @@
+#LogGateRoute{
+    min-height: 100%;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    background-color: var(--white);
+    overflow: hidden;
+}
+
+#LogGateRoute *{
+    font-weight: 300;
+}
+
+#LogGateRoute .BackgroundVideo{
+    width: 0;
+    padding: 0 !important;
+}
+
+#LogGateRoute .BackgroundVideo *:not(video){
+    display: none;
+}
+
+#LogGateRoute .BackgroundVideo video{
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    min-width: 100%;
+    min-height: 100%;
+}
+
+#LogGateRoute .BackgroundVideoFilter{
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    min-width: 100%;
+    min-height: 100%;
+    background-color: var(--white);
+    -webkit-animation: DecreaseOpacityAnimation 1s forwards; 
+    animation: DecreaseOpacityAnimation 1s forwards;
+}
+
+#LogGateRoute .FloatingContainer{
+    text-align: center;
+}
+
+#LogGateRoute .FloatingContainer img{
+    width: 300px;
+    margin-bottom: 50px;
+}
+
+#LogGateRoute .FloatingContainer input{
+    margin-bottom: 5px;
+    border-color: var(--grey-light);
+    color: var(--grey);
+}
+
+#LogGateRoute .FloatingContainer button{
+    width: 100%;
+    background-color: var(--blue);
+    border: none;
+}
+
+#LogGateRoute .BottomLabel{
+    position: absolute;
+    bottom: 0;
+    color: var(--grey);
+    text-align: center;
+}
+
+#LogGateRoute .BottomLabel a{
+    color: var(--blue);
+    text-decoration: none;
+}
+
+/** Animations **/
+@keyframes DecreaseOpacityAnimation{
+    0%{
+        opacity: 1;
+    }
+    100%{
+        opacity: 0.75;
+    }
+}
+
+@-webkit-keyframes DecreaseOpacityAnimation{
+    0%{
+        opacity: 1;
+    }
+    100%{
+        opacity: 0.75;
+    }
+}
