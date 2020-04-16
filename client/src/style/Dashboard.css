@@ -1,0 +1,147 @@
+#DashboardRoute .navbar.bg-dark{
+    background: var(--black) !important;
+    z-index: 2;
+}
+
+#DashboardRoute .navbar img{
+    height: 30px;
+}
+
+#DashboardRoute .navbar .nav-link{
+    margin-left: 5px;
+    color: var(--white);
+}
+
+#DashboardRoute .navbar .nav-link svg{
+    margin-right: 5px;
+}
+
+#DashboardRoute #MapContainer{
+    height: calc(100% - 56px);
+    width: 50%;
+    margin-top: -56px;
+    z-index: 1;
+    float: left;
+}
+
+#DashboardRoute #MapContainer .map .mapboxgl-ctrl-bottom-right{
+    display: none;
+}
+
+#DashboardRoute #MapContainer .marker{
+    height: 30px;
+    width: 30px;
+    color: var(--blue);
+    cursor: pointer;
+}
+
+#DashboardRoute table{
+    width: 50%;
+}
+
+#DashboardRoute table th:not(:first-child){
+    text-align: center;
+}
+
+#DashboardRoute table td:not(:first-child){
+    text-align: center;
+}
+
+#DashboardRoute table .stripped{
+    background: var(--blue);
+    color: var(--white);
+}
+
+#DashboardRoute table .not-stripped{
+    color: var(--grey-light);
+}
+
+#DashboardRoute .ToastNotification{
+    z-index: 9999;
+}
+
+#AlertsModal *{
+    transition: none;
+}
+
+#AlertsModal svg{
+    position: absolute;
+    display: inline-block;
+    right: 20px;
+    top: 15px;
+    color: var(--black);
+    cursor: pointer;
+}
+
+#AlertsModal .modal-footer .btn:first-child{
+    background: var(--grey);
+    border-color: var(--grey);
+}
+
+#AlertsModal .modal-footer .btn{
+    background: var(--grey-dark);
+    border-color: var(--grey-dark);
+}
+
+#AlertsModal .modal-footer .add{
+    background: var(--blue);
+    border-color: var(--blue);
+}
+
+#AlertsModal .InputPrepend{
+    justify-content: right;
+    margin-right: 10px;
+}
+
+#AlertsModal .InputPrepend span{
+    width: 100px;
+    height: 35px;
+}
+
+#AlertsModal .LargeDropdown{
+    width: calc(100% - 110px);
+}
+
+#AlertsModal .LargeDropdown button{
+    width: 100%;
+    height: 35px;
+    background: var(--grey-light);
+    border-color: var(--grey);
+}
+
+#AlertsModal .LargeDropdown.choosed button{
+    background: var(--grey-dark);
+    border-color: var(--grey-dark);
+    color: var(--white) !important;
+}
+
+#AlertsModal .LargeDropdown.choosed button svg{
+    color: var(--white) !important;
+}
+
+#AlertsModal .LargeDropdown button{
+    color: #000;
+    font-weight: 300;
+}
+
+#AlertsModal .LargeDropdown button svg{
+    margin-top: -5px;
+}
+
+#AlertsModal .LargeDropdown button::after{
+    display: none !important;
+}
+
+#AlertsModal .LargeDropdown .dropdown-menu{
+    margin-left: 30px;
+}
+
+#AlertsModal .LargeDropdown .dropdown-item:active{
+    background: var(--blue);
+}
+
+#AlertsModal .VerifiedInputControl{
+    height: 35px;
+    border-radius: .25rem !important;
+    text-align: center;
+}

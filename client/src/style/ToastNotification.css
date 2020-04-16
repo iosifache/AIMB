@@ -1,0 +1,37 @@
+.ToastNotification{
+	position: fixed;
+	margin: 10;
+	translate: opacity 0.3s ease;
+}
+
+.ToastNotification.fixedTopRight{
+	top: 0;
+	right: 0;
+}
+
+.ToastNotification.fixedTopLeft{
+	top: 0;
+	left: 0;
+}
+
+.ToastNotification.fixedBottomLeft{
+	bottom: 0;
+	left: 0;
+}
+
+.ToastNotification.fixedBottomRight{
+	bottom: 0;
+	right: 0;
+}
+
+.ToastNotification.hidden{
+	opacity: 0 !important;
+}
+
+.ToastNotification img{
+	height: 20px;
+}
+
+.ToastNotification .toast-body{
+	font-weight: 300;
+}

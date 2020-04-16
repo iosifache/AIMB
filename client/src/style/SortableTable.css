@@ -1,0 +1,12 @@
+.SortableTable svg{
+    margin: -5px 0 0 5px;
+    cursor: pointer;
+}
+
+.SortableTable svg.SortNeutral{
+    color: var(--grey-light);
+}
+
+.SortableTable  svg.SortDown, .SortableTable svg.SortUp{
+    color: var(--black);
+}
