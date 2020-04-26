@@ -10,12 +10,27 @@ import {Form} from "react-bootstrap"
 import "../style/Baseline.css"
 import "../style/VerifiedInputControl.css"
 
+// Define used enumerations
+export const VERIFIED_STATE = {
+	EMPTY: 0,
+	ILLEGAL: 1,
+	LEGAL: 2
+}
+export const VERIFIED_TYPE = {
+	NON_EMPTY: 0,
+	ALPHAS: 1,
+	NUMBERS: 2,
+	NAME: 3,
+	PASSWORD: 4,
+	EMAIL: 5
+}
+
 // Define component
 class VerifiedInputControl extends React.Component{
 
 	// Default state
 	default_state = {
-		verified: "empty",
+		verified: VERIFIED_STATE.EMPTY,
 		emptied: false
 	}
 	state = JSON.parse(JSON.stringify(this.default_state))
@@ -26,7 +41,7 @@ class VerifiedInputControl extends React.Component{
 		var new_state = this.state
 
 		if (this.props.value === "" && !new_state.emptied){
-			new_state.verified = "empty"
+			new_state.verified = VERIFIED_STATE.EMPTY
 			new_state.emptied = true
 			this.setState(new_state)
 		}
@@ -46,14 +61,14 @@ class VerifiedInputControl extends React.Component{
 		else {
 
 			if (value === ""){
-				new_state.verified = "empty"
+				new_state.verified = VERIFIED_STATE.EMPTY
 			}
 			else if (!this.validateText(this.props.verifiedType, value)){
-				new_state.verified = "illegal"
+				new_state.verified = VERIFIED_STATE.ILLEGAL
 				new_state.emptied = false
 			}
 			else{
-				new_state.verified = "legal"
+				new_state.verified = VERIFIED_STATE.LEGAL
 				new_state.emptied = false
 			}
 
@@ -74,17 +89,17 @@ class VerifiedInputControl extends React.Component{
 	validateText(type, text){
 
 		switch (type){
-			case "non-empty":
+			case VERIFIED_TYPE.NON_EMPTY:
 				return regexes.simple.empty.test(text)
-			case "alphas":
+			case VERIFIED_TYPE.ALPHAS:
 				return regexes.simple.alphas.test(text)
-			case "numbers":
+			case VERIFIED_TYPE.NUMBERS:
 				return regexes.simple.numbers.test(text)
-			case "name":
+			case VERIFIED_TYPE.NAME:
 				return regexes.compound.name.test(text)
-			case "password":
+			case VERIFIED_TYPE.PASSWORD:
 				return regexes.compound.password.test(text)
-			case "email":
+			case VERIFIED_TYPE.EMAIL:
 				return regexes.compound.email.test(text)
 			default:
 				break
@@ -95,14 +110,52 @@ class VerifiedInputControl extends React.Component{
 	// Method that renders the component
 	render(){
 
-		var className = ["VerifiedInputControl", this.state.verified].join(" ")
+		var verifiedClass, className, type
+
+		switch (this.state.verified){
+			case VERIFIED_STATE.EMPTY:
+				verifiedClass = "empty"
+				break
+			case VERIFIED_STATE.LEGAL:
+				verifiedClass = "legal"
+				break
+			case VERIFIED_STATE.ILLEGAL:
+				verifiedClass = "illegal"
+				break
+			default:
+				break
+		}
+		className = ["VerifiedInputControl", verifiedClass].join(" ")
+
+		switch (this.props.verifiedType) {
+			case VERIFIED_TYPE.NON_EMPTY:
+				type = "text"
+				break
+			case VERIFIED_TYPE.ALPHAS:
+				type = "text"
+				break
+			case VERIFIED_TYPE.NUMBERS:
+				type = "text"
+				break
+			case VERIFIED_TYPE.NAME:
+				type = "text"
+				break
+			case VERIFIED_TYPE.PASSWORD:
+				type = "password"
+				break
+			case VERIFIED_TYPE.EMAIL:
+				type = "email"
+				break
+			default:
+				break
+		}
 
 		return (
 
 			<Form.Control 
 				name={this.props.name} 
 				className={className} 
-				type={this.props.type}
+				type={type}
 				disabled={this.props.disabled}
 				value={this.props.value} 
 				placeholder={this.props.placeholder} 
@@ -118,8 +171,7 @@ class VerifiedInputControl extends React.Component{
 
 // Set up the required and default props
 VerifiedInputControl.propTypes = {
-	type: PropTypes.oneOf(["text", "number", "password", "email"]),
-	verifiedType: PropTypes.oneOf(["non-empty", "alphas", "numbers", "name", "password", "email"]),
+	verifiedType: PropTypes.oneOf([VERIFIED_TYPE.NON_EMPTY, VERIFIED_TYPE.ALPHAS, VERIFIED_TYPE.NUMBERS, VERIFIED_TYPE.NAME, VERIFIED_TYPE.PASSWORD, VERIFIED_TYPE.EMAIL]),
 	name: PropTypes.string.isRequired,
 	value: PropTypes.string.isRequired,
     placeholder: PropTypes.string,

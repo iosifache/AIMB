@@ -10,3 +10,12 @@
 .SortableTable  svg.SortDown, .SortableTable svg.SortUp{
     color: var(--black);
 }
+
+@media all and (max-width: 1200px){
+    .SortableTable svg{
+        display: block;
+        text-align: center;
+        width: 100%;
+        margin-top: 3px;
+    }
+}

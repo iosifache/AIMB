@@ -15,6 +15,14 @@ import configuration from "../configuration/index"
 // Get configuration
 var all_routes_config = configuration.routes.all
 
+// Define used enumerations
+export const FIXED_POSITION = {
+	TOP_LEFT: 0,
+	TOP_RIGHT: 1,
+	BOTTOM_LEFT: 2,
+	BOTTOM_RIGHT: 3
+}
+
 // Define component
 class ToastNotification extends React.Component{
 
@@ -52,16 +60,16 @@ class ToastNotification extends React.Component{
 		// Join all the className
 		hidded_class = (this.state.hidden || this.props.refreshToken === -1) ? "hidden" : ""
 		switch (this.props.fixed){
-			case "top-left":
+			case FIXED_POSITION.TOP_LEFT:
 				fixed_class = "fixedTopRight"
 				break
-			case "bottom-right":
+			case FIXED_POSITION.BOTTOM_RIGHT:
 				fixed_class = "fixedBottomRight"
 				break
-			case "bottom-left":
+			case FIXED_POSITION.BOTTOM_LEFT:
 				fixed_class = "fixedBottomLeft"
 				break
-			case "top-right":
+			case FIXED_POSITION.TOP_RIGHT:
 				fixed_class = "fixedTopRight"
 				break
 			default:
@@ -76,6 +84,7 @@ class ToastNotification extends React.Component{
 				className={className} 
 				autohide delay={this.props.delay} 
 				onClose={this.hide.bind(this)}
+				id={this.props.id}
 			>
 
 				{/* Toast header */}
@@ -114,12 +123,14 @@ ToastNotification.propTypes = {
 	title: PropTypes.string.isRequired,
 	refreshToken: PropTypes.string,
 	delay: PropTypes.string.isRequired,
-	fixed: PropTypes.oneOf(["top-left", "bottom-right", "bottom-left", "top-right"]),
+	fixed: PropTypes.oneOf([FIXED_POSITION.TOP_RIGHT, FIXED_POSITION.TOP_LEFT, FIXED_POSITION.BOTTOM_RIGHT, FIXED_POSITION.BOTTOM_LEFT]),
 	className: PropTypes.string,
+	id: PropTypes.string
 }
 ToastNotification.defaultProps = {
 	refreshToken: -1,
-	className: ""
+	className: "",
+	id: ""
 }
 
 // Export

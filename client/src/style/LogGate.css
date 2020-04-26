@@ -90,3 +90,10 @@
         opacity: 0.75;
     }
 }
+
+/* Hide toast notification is resolution isn't enough */
+@media all and (max-width: 1100px){
+    #LogGateToastNotification{
+        display: none !important;
+    }
+}

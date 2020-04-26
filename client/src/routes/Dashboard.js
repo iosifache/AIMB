@@ -1,17 +1,18 @@
 // Import libraries
 import React from "react"
 import {withRouter} from "react-router"
+import MediaQuery from 'react-responsive'
 
 // Import components
-import {Container, Navbar, Nav, Modal, Button, ListGroup, Dropdown, InputGroup} from "react-bootstrap"
+import {Container, Navbar, Nav, Modal, Button, ListGroup, Dropdown, InputGroup, Alert} from "react-bootstrap"
 import ReactMapGL, {Marker} from "react-map-gl"
 import {Redirect} from "react-router-dom"
-import {MdRefresh} from "react-icons/md"
 import {FiLogOut} from "react-icons/fi"
-import {FaCity, FaTrashAlt, FaBell, FaChevronRight} from "react-icons/fa"
-import VerifiedInputControl from "../components/VerifiedInputControl"
+import {FaCity, FaTrashAlt, FaBell, FaChevronRight, FaMap, FaCalculator} from "react-icons/fa"
+import VerifiedInputControl, {VERIFIED_TYPE, VERIFIED_STATE} from "../components/VerifiedInputControl"
 import SortableTable from "../components/SortableTable"
-import ToastNotification from "../components/ToastNotification"
+import ToastNotification, {FIXED_POSITION} from "../components/ToastNotification"
+import Error, {ERROR_TYPES} from "../routes/Error"
 
 // Import stylesheets
 import "../style/Baseline.css"
@@ -32,6 +33,10 @@ const MODAL_VARIANTS = {
 	LIST: 0,
 	ADD: 1
 }
+const VIEW_VARIANTS = {
+	BIRDVIEW: 0,
+	CALCULATOR: 1
+}
 
 // Define component
 class Dashboard extends React.Component{
@@ -41,6 +46,7 @@ class Dashboard extends React.Component{
 		viewport: route_config.map.default_viewport,
 		data: APIWorkerInstance.getRecentSectorsData(),
 		highlighted_lines: [],
+		current_view: VIEW_VARIANTS.CALCULATOR,
 		modal_state: {
 			opened: false,
 			variant: MODAL_VARIANTS.LIST,
@@ -48,8 +54,23 @@ class Dashboard extends React.Component{
 				score_id: -1,
 				sector_id: -1,
 				operation_id: -1,
-				value: ""
+				value: "",
+				valid_value: VERIFIED_STATE.EMPTY
 			}
+		},
+		calculator_state: {
+			sector_id: {
+				value: "",
+				validity: VERIFIED_STATE.EMPTY
+			},
+			number_of_rooms: {
+				value: "",
+				validity: VERIFIED_STATE.EMPTY
+			},
+			number_of_square_meters: {
+				value: "",
+				validity: VERIFIED_STATE.EMPTY
+			},
 		},
 		user_data: {
 			existent_alerts: APIWorkerInstance.getUsersAlerts()
@@ -89,13 +110,30 @@ class Dashboard extends React.Component{
 	// Method that modifies the viewport of the map
 	changeMapViewport = viewport => this.setState({viewport})
 
-	// Method that refreshes the displayed data about sectors
-	refreshData(){
+	// Method that moves the view to the birdview one
+	moveToBirdview(){
+
+		if (this.state.current_view === VIEW_VARIANTS.BIRDVIEW)
+
+			// Refresh data
+			this.setState({
+				data: APIWorkerInstance.getRecentSectorsData()
+			}, () => {
+				this.launchToastNotification(all_routes_config.toasts.titles.notification, route_config.toasts.bodies.refreshed_datas)
+			})
+
+		else
+			this.setState({
+				current_view: VIEW_VARIANTS.BIRDVIEW
+			})
+
+	}
+
+	// Method that moves the view to the calculator one
+	moveToCalculator(){
 
 		this.setState({
-			data: APIWorkerInstance.getRecentSectorsData()
-		}, () => {
-			this.launchToastNotification(all_routes_config.toasts.titles.notification, route_config.toasts.bodies.refreshed_datas)
+			current_view: VIEW_VARIANTS.CALCULATOR
 		})
 
 	}
@@ -133,6 +171,27 @@ class Dashboard extends React.Component{
 		this.setState({
 			highlighted_lines: []
 		})
+
+	}
+
+	// Method that sets a value from the calculator
+	setNewCalculatorValue = event => {
+
+		var {name, value} = event.detail.target
+		var old_modal_state = this.state.calculator_state
+
+		old_modal_state[name].value = value
+		old_modal_state[name].validity = Number(event.type)
+		this.setState({
+			calculator_state: old_modal_state
+		})
+
+	}
+
+	// Method that computes the value of the apartment
+	computeApartmentPrice(){
+
+		//
 
 	}
 
@@ -189,6 +248,7 @@ class Dashboard extends React.Component{
 		var old_modal_state = this.state.modal_state
 
 		old_modal_state.new_alert.value = value
+		old_modal_state.new_alert.valid_value = Number(event.type)
 		this.setState({
 			modal_state: old_modal_state
 		})
@@ -236,7 +296,7 @@ class Dashboard extends React.Component{
 		var alert_data = this.state.modal_state.new_alert
 
 		// Check if all alert details are completed
-		if (alert_data.score_id === -1 || alert_data.sector_id === -1 || alert_data.operation_id === -1 || alert_data.value === ""){
+		if (alert_data.score_id === -1 || alert_data.sector_id === -1 || alert_data.operation_id === -1 || alert_data.value === "" || alert_data.valid_value !== VERIFIED_STATE.LEGAL){
 			this.launchToastNotification(all_routes_config.toasts.titles.alert, route_config.toasts.bodies.invalid_alert)
 			return
 		}
@@ -256,7 +316,7 @@ class Dashboard extends React.Component{
 	// Method that renders the component
 	render(){
 
-		const {viewport, modal_state, data} = this.state
+		const {viewport, modal_state, data, calculator_state} = this.state
 		const {history, location} = this.props
 		var table_data = []
 
@@ -275,7 +335,7 @@ class Dashboard extends React.Component{
 
 		// Translate data in the table format
 		data.forEach(element => {
-			table_data.push([element.name, element.average_price, element.average_air_quality, element.score])
+			table_data.push([element.name, element.average_price_per_room, element.average_price_per_square_meter, element.average_air_quality, element.score])
 		})
 
 		// Generate markers for map
@@ -318,7 +378,7 @@ class Dashboard extends React.Component{
 
 			return (
 				<ListGroup.Item>
-					Valoarea <b>{score}</b> pentru <b>{sector}</b> sa fie <b>{operation}</b> valoarea <b>{element.value}</b>.
+					{route_config.modals.both.labels.value} <b>{score}</b> {route_config.modals.both.labels.for}  <b>{sector}</b> {route_config.modals.both.labels.is} <b>{operation}</b> {route_config.modals.both.labels.compared_value} <b>{element.value}</b>{route_config.modals.both.labels.end} 
 					<FaTrashAlt key={key} onClick={this.removeExistentAlert.bind(this, key)}/>
 				</ListGroup.Item>
 			)
@@ -326,8 +386,8 @@ class Dashboard extends React.Component{
 		})
 
 		// Get selected options for dropdowns
-		var selected_score, selected_sector, selected_operation
 		var score_class, sector_class, operation_class
+		var selected_score, selected_sector, selected_operation
 		if (modal_state.new_alert.score_id !== -1){							
 			selected_score = route_config.modals.both.scores[modal_state.new_alert.score_id]
 			score_class = "LargeDropdown choosed"
@@ -358,201 +418,286 @@ class Dashboard extends React.Component{
 
 			<div id="DashboardRoute">
 
-				{/* Modal for working with alerts */}
-				<Modal 
-					id="AlertsModal" 
-					show={modal_state.opened}
-					size="lg" centered
-					onHide={this.setModalOpening.bind(this, false)}
-				>
+				<MediaQuery minWidth={1000}>
 
-					{/* Modal header */}
-					<Modal.Header closeButton>
-						<Modal.Title>
-							{
-								(this.state.modal_state.variant === MODAL_VARIANTS.LIST) ? (
-									route_config.modals.list.title
-								) :
-								(
-									route_config.modals.add.title
-								)
-							}
-						</Modal.Title>
-					</Modal.Header>
-
-					{/* Modal body */}
-					<Modal.Body>
-						<Container>
-							{
-								(this.state.modal_state.variant === MODAL_VARIANTS.LIST) ? (
-										<ListGroup>
-											{existent_alerts}
-										</ListGroup>
-								) :
-								(
-									<Row>
-										<InputGroup className="mb-3">
-											<InputGroup.Prepend className="InputPrepend">
-												<InputGroup.Text id="basic-addon1">Valoarea</InputGroup.Text>
-											</InputGroup.Prepend>
-											<Dropdown 
-												className={score_class} 
-												drop="right" 
-												onSelect={(eventKey, event) => {this.setNewAlertDropdownValue(eventKey, event)}}
-											>
-												<Dropdown.Toggle variant="success" id="dropdown-basic">
-													{selected_score}
-													<FaChevronRight/>
-												</Dropdown.Toggle>
-												<Dropdown.Menu>
-													{score_options}
-												</Dropdown.Menu>
-											</Dropdown>
-										</InputGroup>
-										<InputGroup className="mb-3">
-											<InputGroup.Prepend className="InputPrepend">
-												<InputGroup.Text id="basic-addon1">pentru</InputGroup.Text>
-											</InputGroup.Prepend>
-											<Dropdown 
-												className={sector_class}
-												drop="right"
-												onSelect={(eventKey, event) => {this.setNewAlertDropdownValue(eventKey, event)}}
-											>
-												<Dropdown.Toggle variant="success" id="dropdown-basic">
-													{selected_sector}
-													<FaChevronRight/>
-												</Dropdown.Toggle>
-												<Dropdown.Menu>
-													{sector_options}
-												</Dropdown.Menu>
-											</Dropdown>
-										</InputGroup>
-										<InputGroup className="mb-3">
-											<InputGroup.Prepend className="InputPrepend">
-												<InputGroup.Text id="basic-addon1">sa fie</InputGroup.Text>
-											</InputGroup.Prepend>
-											<Dropdown 
-												className={operation_class}
-												drop="right" 
-												onSelect={(eventKey, event) => {this.setNewAlertDropdownValue(eventKey, event)}}
-											>
-												<Dropdown.Toggle variant="success" id="dropdown-basic">
-													{selected_operation}
-													<FaChevronRight/>
-												</Dropdown.Toggle>
-												<Dropdown.Menu>
-													{operation_options}
-												</Dropdown.Menu>
-											</Dropdown>
-										</InputGroup>
-										<InputGroup className="mb-3">
-											<InputGroup.Prepend className="InputPrepend">
-												<InputGroup.Text id="basic-addon1">valoarea</InputGroup.Text>
-											</InputGroup.Prepend>
-											<VerifiedInputControl 
-												type="text" verifiedType="numbers" 
-												name="value" 
-												value={modal_state.new_alert.value} 
-												placeholder="" 
-												onChange={this.setNewAlertValue.bind(this)}
-											/>
-										</InputGroup>
-									</Row>
-								)
-							}
-						</Container>
-					</Modal.Body>
-
-				{/* Modal footer */}
-					<Modal.Footer>
-						<Button onClick={this.setModalOpening.bind(this, false)}>
-							{route_config.modals.both.buttons.close}
-						</Button>
-						<Button onClick={this.toggleModalVariant.bind(this)}>
-							{
-								(this.state.modal_state.variant === MODAL_VARIANTS.LIST) ? (
-									route_config.modals.add.buttons.add
-								) :
-								(
-									route_config.modals.list.buttons.list
-								)
-							}
-						</Button>
-						{
-							(this.state.modal_state.variant === MODAL_VARIANTS.ADD) ? (
-								<Button className="add" onClick={this.addNewAlert.bind(this)}>
-									{route_config.modals.add.buttons.add_now}
-								</Button>
-							) :
-							(
-								""
-							)
-						}
-					</Modal.Footer>
-
-				</Modal>
-
-				{/* Menu */}
-				<Navbar bg="dark" variant="dark" id="menu">
-					<Container>
-						<Navbar.Brand>
-							<img
-								alt={all_routes_config.app_details.name.short}
-								src={all_routes_config.logo.white_source}
-								className="d-inline-block align-top"
-							/>
-						</Navbar.Brand>
-						<Nav className="justify-content-end">
-							<Nav.Item>
-								<Nav.Link onClick={this.refreshData.bind(this)}>
-									<MdRefresh/>
-									{route_config.menu.items.refresh}
-								</Nav.Link>
-							</Nav.Item>
-							<Nav.Item>
-								<Nav.Link onClick={this.setModalOpening.bind(this, true)}>
-									<FaBell/>
-									{route_config.menu.items.alerts}
-								</Nav.Link>
-							</Nav.Item>
-							<Nav.Item>
-								<Nav.Link onClick={this.logout.bind(this)}>
-									<FiLogOut/>
-									{route_config.menu.items.logout}
-								</Nav.Link>
-							</Nav.Item>
-						</Nav>
-					</Container>
-				</Navbar>
-
-				{/* Map */}
-				<div id="MapContainer">
-					<ReactMapGL
-						{...viewport}
-						mapboxApiAccessToken={all_routes_config.secrets.mapbox_token}
-						width="100%" height="100%" className="map"
-						onViewportChange={this.changeMapViewport}
-						mapStyle="mapbox://styles/iosifache/ck8dao8c20voi1io4kjur93v6"
+					{/* Modal for working with alerts */}
+					<Modal 
+						id="AlertsModal" 
+						show={modal_state.opened}
+						size="lg" centered
+						onHide={this.setModalOpening.bind(this, false)}
 					>
-						{markers}
-					</ReactMapGL>
-				</div>
 
-				{/* Sortable table with Bucharest's regions prices, air quality and overall score */}
-				<SortableTable 
-					columnNames={route_config.table.column_names} 
-					data={table_data} 
-					highlightedLinesIndexes={this.state.highlighted_lines}
-				/>
+						{/* Modal header */}
+						<Modal.Header closeButton>
+							<Modal.Title>
+								{
+									(this.state.modal_state.variant === MODAL_VARIANTS.LIST) ? (
+										route_config.modals.list.title
+									) :
+									(
+										route_config.modals.add.title
+									)
+								}
+							</Modal.Title>
+						</Modal.Header>
 
-				{/* Toast notification */}
-				<ToastNotification 
-					title={this.state.toast.title} 
-					body={this.state.toast.body}
-					delay={all_routes_config.toasts.duration}
-					refreshToken={this.state.toast.refresh_token}
-					fixed="bottom-right" 
-				/>
+						{/* Modal body */}
+						<Modal.Body>
+							<Container>
+								{
+									(this.state.modal_state.variant === MODAL_VARIANTS.LIST) ? (
+											<ListGroup>
+												{existent_alerts}
+											</ListGroup>
+									) :
+									(
+										<Row>
+											<InputGroup className="mb-3">
+												<InputGroup.Prepend className="InputPrepend">
+													<InputGroup.Text id="basic-addon1">{route_config.modals.both.labels.value}</InputGroup.Text>
+												</InputGroup.Prepend>
+												<Dropdown 
+													className={score_class} 
+													drop="right" 
+													onSelect={(eventKey, event) => {this.setNewAlertDropdownValue(eventKey, event)}}
+												>
+													<Dropdown.Toggle variant="success" id="dropdown-basic">
+														{selected_score}
+														<FaChevronRight/>
+													</Dropdown.Toggle>
+													<Dropdown.Menu>
+														{score_options}
+													</Dropdown.Menu>
+												</Dropdown>
+											</InputGroup>
+											<InputGroup className="mb-3">
+												<InputGroup.Prepend className="InputPrepend">
+													<InputGroup.Text id="basic-addon1">{route_config.modals.both.labels.for}</InputGroup.Text>
+												</InputGroup.Prepend>
+												<Dropdown 
+													className={sector_class}
+													drop="right"
+													onSelect={(eventKey, event) => {this.setNewAlertDropdownValue(eventKey, event)}}
+												>
+													<Dropdown.Toggle variant="success" id="dropdown-basic">
+														{selected_sector}
+														<FaChevronRight/>
+													</Dropdown.Toggle>
+													<Dropdown.Menu>
+														{sector_options}
+													</Dropdown.Menu>
+												</Dropdown>
+											</InputGroup>
+											<InputGroup className="mb-3">
+												<InputGroup.Prepend className="InputPrepend">
+													<InputGroup.Text id="basic-addon1">{route_config.modals.both.labels.is}</InputGroup.Text>
+												</InputGroup.Prepend>
+												<Dropdown 
+													className={operation_class}
+													drop="right" 
+													onSelect={(eventKey, event) => {this.setNewAlertDropdownValue(eventKey, event)}}
+												>
+													<Dropdown.Toggle variant="success" id="dropdown-basic">
+														{selected_operation}
+														<FaChevronRight/>
+													</Dropdown.Toggle>
+													<Dropdown.Menu>
+														{operation_options}
+													</Dropdown.Menu>
+												</Dropdown>
+											</InputGroup>
+											<InputGroup className="mb-3">
+												<InputGroup.Prepend className="InputPrepend">
+													<InputGroup.Text id="basic-addon1">{route_config.modals.both.labels.compared_value}</InputGroup.Text>
+												</InputGroup.Prepend>
+												<VerifiedInputControl 
+													verifiedType={VERIFIED_TYPE.NUMBERS}
+													name="value" 
+													value={modal_state.new_alert.value} 
+													placeholder="" 
+													onChange={this.setNewAlertValue.bind(this)}
+												/>
+											</InputGroup>
+										</Row>
+									)
+								}
+							</Container>
+						</Modal.Body>
+
+						{/* Modal footer */}
+						<Modal.Footer>
+							<Button onClick={this.setModalOpening.bind(this, false)}>
+								{route_config.modals.both.buttons.close}
+							</Button>
+							<Button onClick={this.toggleModalVariant.bind(this)}>
+								{
+									(this.state.modal_state.variant === MODAL_VARIANTS.LIST) ? (
+										route_config.modals.add.buttons.add
+									) :
+									(
+										route_config.modals.list.buttons.list
+									)
+								}
+							</Button>
+							{
+								(this.state.modal_state.variant === MODAL_VARIANTS.ADD) ? (
+									<Button className="add" onClick={this.addNewAlert.bind(this)}>
+										{route_config.modals.add.buttons.add_now}
+									</Button>
+								) :
+								(
+									""
+								)
+							}
+						</Modal.Footer>
+
+					</Modal>
+
+					{/* Menu */}
+					<Navbar bg="dark" variant="dark" id="menu">
+						<Container>
+							<Navbar.Brand>
+								<img
+									alt={all_routes_config.app_details.name.short}
+									src={all_routes_config.logo.white_source}
+									className="d-inline-block align-top"
+								/>
+							</Navbar.Brand>
+							<Nav className="justify-content-end">
+								<Nav.Item>
+									<Nav.Link onClick={this.moveToBirdview.bind(this)}>
+										<FaMap/>
+										{route_config.menu.items.bird_view}
+									</Nav.Link>
+								</Nav.Item>
+								<Nav.Item>
+									<Nav.Link onClick={this.moveToCalculator.bind(this)}>
+										<FaCalculator/>
+										{route_config.menu.items.calculator}
+									</Nav.Link>
+								</Nav.Item>
+								<Nav.Item>
+									<Nav.Link onClick={this.setModalOpening.bind(this, true)}>
+										<FaBell/>
+										{route_config.menu.items.alerts}
+									</Nav.Link>
+								</Nav.Item>
+								<Nav.Item>
+									<Nav.Link onClick={this.logout.bind(this)}>
+										<FiLogOut/>
+										{route_config.menu.items.logout}
+									</Nav.Link>
+								</Nav.Item>
+							</Nav>
+						</Container>
+					</Navbar>
+
+					{/* Map */}
+					<div id="MapContainer">
+						<ReactMapGL
+							{...viewport}
+							mapboxApiAccessToken={all_routes_config.secrets.mapbox_token}
+							width="100%" height="100%" className="map"
+							onViewportChange={this.changeMapViewport}
+							mapStyle="mapbox://styles/iosifache/ck8dao8c20voi1io4kjur93v6"
+						>
+							{markers}
+						</ReactMapGL>
+					</div>
+
+					{
+
+						(this.state.current_view === VIEW_VARIANTS.BIRDVIEW) ? (
+
+								<div id="TableContainer">
+
+									<Alert variant="dark">
+										<Alert.Heading>
+											{route_config.table.details.title}
+										</Alert.Heading>
+										<p>
+											{route_config.table.details.description}
+										</p>
+										<hr/>
+										<p>
+											<b>{route_config.calculator.details.note_prefix}</b>: {route_config.table.details.note}
+										</p>
+									</Alert>
+
+									<SortableTable 
+										columnNames={route_config.table.column_names} 
+										data={table_data} 
+										highlightedLinesIndexes={this.state.highlighted_lines}
+									/>
+
+								</div>
+							
+						) : (
+
+							<div id="PriceCalculator">
+
+								<Alert variant="dark">
+										<Alert.Heading>
+											{route_config.calculator.details.title}
+										</Alert.Heading>
+										<p>
+											{route_config.calculator.details.description}
+										</p>
+										<hr/>
+										<p>
+											<b>{route_config.calculator.details.note_prefix}</b>: {route_config.calculator.details.note}
+										</p>
+									</Alert>
+
+								{/* Input fields */}
+								<VerifiedInputControl 
+									type="text" verifiedType={VERIFIED_TYPE.ALPHAS}
+									name="sector_id" 
+									value={calculator_state.sector_id.value} 
+									placeholder={route_config.calculator.inputs.labels.choosed_sector}
+									onChange={this.setNewCalculatorValue.bind(this)}
+									disabled
+								/>
+								<VerifiedInputControl 
+									type="text" verifiedType={VERIFIED_TYPE.NUMBERS}
+									name="number_of_rooms" 
+									value={calculator_state.number_of_rooms.value} 
+									placeholder={route_config.calculator.inputs.labels.number_of_rooms}
+									onChange={this.setNewCalculatorValue.bind(this)}
+								/>
+								<VerifiedInputControl 
+									type="text" verifiedType={VERIFIED_TYPE.NUMBERS}
+									name="number_of_square_meters" 
+									value={calculator_state.number_of_square_meters.value} 
+									placeholder={route_config.calculator.inputs.labels.number_of_square_meters}
+									onChange={this.setNewCalculatorValue.bind(this)}
+								/>
+
+								{/* Price Computation Button */}
+								<Button onClick={this.computeApartmentPrice.bind(this)}>
+									{route_config.calculator.buttons.compute}
+								</Button>
+
+							</div>
+
+						)
+					}
+
+					{/* Toast notification */}
+					<ToastNotification 
+						title={this.state.toast.title} 
+						body={this.state.toast.body}
+						delay={all_routes_config.toasts.duration}
+						refreshToken={this.state.toast.refresh_token}
+						fixed={FIXED_POSITION.BOTTOM_RIGHT}
+					/>
+
+				</MediaQuery>
+
+				<MediaQuery maxWidth={999}>
+					<Error type={ERROR_TYPES.RESOLUTION_NOT_ALLOWED}/>
+				</MediaQuery>
 
 			</div>
 		

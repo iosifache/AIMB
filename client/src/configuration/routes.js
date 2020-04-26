@@ -1,13 +1,16 @@
 // Import tokens
 import tokens from "./tokens"
 
+// Import used enumerations
+import {VERIFIED_TYPE} from "../components/VerifiedInputControl"
+
 // Define configuration object
 const config = {
     all: {
         app_details: {
             name: {
                 short: "AIMB",
-                long: "Analiza Imobiliarelor din București"
+                long: "Analiza Imobiliarelor din Municipiul București"
             }
         },
         loading: {
@@ -26,7 +29,7 @@ const config = {
                 alert: "Alertă",
                 error: "Eroare"
             },
-            time_caption: "acum cateva secunde",
+            time_caption: "acum câteva secunde",
             duration: 3000
         }
     },
@@ -72,10 +75,17 @@ const config = {
         },
         modals: {
             both: {
-                scores: ["prețulului mediu", "calitații aerului", "scorului"],
-                operations: ["mai mică decât", "egală cu", "mai mare decât"],
+                scores: ["prețulului mediu per cameră", "prețulului mediu per metru pătrat", "calității aerului", "scorului"],
+                operations: ["mai mic decât", "egală cu", "mai mare decât"],
                 buttons: {
                     close: "Închide"
+                },
+                labels: {
+                    value: "Valoarea",
+                    for: "pentru",
+                    is: "să fie",
+                    compared_value: "valoarea",
+                    end: "."
                 }
             },
             list: {
@@ -90,23 +100,34 @@ const config = {
                     add: "Adăugare Alertă",
                     add_now: "Adaugă"
                 }
-            },
+            }
         },
         menu: {
             items: {
-                refresh: "Refresh al Datelor",
+                bird_view: "Birdview",
+                calculator: "Calculator de Preț",
                 alerts: "Manager de Alerte",
                 logout: "Ieșire"
             }
         },
         table: {
+            details: {
+                title: "Birdview",
+                description: "Această funcționalitate vă permite vizualizarea comparativă a metricilor pe diferite sectoare. Evidențierea unei coloane se face in mod automat odată cu punerea mouse-ului asupra unei primării afișate pe hartă.",
+                note_prefix: "Notă",
+                note: "Puteți sorta după o anumită coloană apăsând pe iconița din dreptul acesteia."
+            },
             column_names: [
                 {
                     name: "Nume",
                     sortable: false
                 },
                 {
-                    name: "Preț Mediu",
+                    name: "Preț Mediu per Cameră",
+                    sortable: true
+                },
+                {
+                    name: "Preț Mediu per Metru Pătrat",
                     sortable: true
                 },
                 {
@@ -119,13 +140,31 @@ const config = {
                 }
             ]
         },
+        calculator: {
+            details: {
+                title: "Calculator de Preț",
+                description: "Această funcționalitate vă permite calcularea prețului unui apartament, ținând cont de factori precum sectorul în care acesta se află, numărul de camere și suprafața utilă.",
+                note_prefix: "Notă",
+                note: "Alegerea sectorului se face selectând un punct de pe hartă ce aparține sectorului dorit."
+            },
+            inputs: {
+                labels: {
+                    choosed_sector: "Sectorul Ales",
+                    number_of_rooms: "Număr de Camere",
+                    number_of_square_meters: "Număr de Metri Pătrați"
+                }
+            },
+            buttons: {
+                compute: "Calculează"
+            }
+        },
         toasts: {
             bodies: {
                 added_alert: "Alerta a fost atașată cu succes contului dumneavoastră.",
                 deleted_alert: "Alerta a fost dezasociată cu succes.",
                 invalid_alert: "Datele introduse pentru noua alertă nu respectă regulile de validare.",
                 refreshed_datas: "Datele au fost reîmprospătate.",
-                logout: "Delogarea a fost efectuată cu succes. Vei fi redirecționat imediat."
+                logout: "Delogarea a fost efectuată cu succes. Vei fi redirecționat în cateva momente."
             }
         }
     },
@@ -150,14 +189,12 @@ const config = {
         },
         inputs: [
             {
-                type: "text",
-                verified_type: "email",
+                verified_type: VERIFIED_TYPE.EMAIL,
                 name: "email",
                 placeholder: "Adresă de Email"
             },
             {
-                type: "password",
-                verified_type: "password",
+                verified_type: VERIFIED_TYPE.PASSWORD,
                 name: "password",
                 placeholder: "Parolă"
             }
@@ -171,8 +208,9 @@ const config = {
             bodies: {
                 welcome: "Vă rugăm să introduceți credențialele contului dumneavoastră.",
                 credentials_error: "Credențialele introduse nu respectă regulile de validare.",
-                correct_credentials: "Credențialele sunt corecte. Veți fi redirectat în câteva momente",
-                incorrect_credentials: "Credențialele introduse sunt incorecte"
+                correct_credentials: "Credențialele sunt corecte. Veți fi redirectat în câteva momente.",
+                incorrect_credentials: "Credențialele introduse sunt incorecte.",
+                fail: "Nu s-a putut efectua logarea din cauza unei erori.",
             }
         }
     },
@@ -182,20 +220,17 @@ const config = {
         },
         inputs: [
             {
-                type: "text",
-                verified_type: "name",
+                verified_type: VERIFIED_TYPE.NAME,
                 name: "full_name",
                 placeholder: "Nume Complet"
             },
             {
-                type: "text",
-                verified_type: "email",
+                verified_type: VERIFIED_TYPE.EMAIL,
                 name: "email",
                 placeholder: "Adresă de Email"
             },
             {
-                type: "password",
-                verified_type: "password",
+                verified_type: VERIFIED_TYPE.PASSWORD,
                 name: "password",
                 placeholder: "Parolă"
             }
@@ -209,7 +244,23 @@ const config = {
             bodies: {
                 welcome: "Vă rugăm să introduceți datele noului cont.",
                 credentials_error: "Datele introduse nu respectă regulile de validare.",
-                valid_credentials: "Contul a fost creat cu succes. Veți fi redirectat în câteva momente."
+                valid_credentials: "Contul a fost creat cu succes. Veți fi redirectat în câteva momente.",
+                fail: "Nu s-a putut efectua înregistrarea din cauza unei erori.",
+                email_already_used: "Un alt cont înregistrat folosește adresa de email introdusă."
+            }
+        }
+    },
+    errors: {
+        error_prefix: "Eroare",
+        types: {
+            not_found: {
+                description: "Pagina nu a fost gasită."
+            },
+            not_authorized: {
+                description: "Nu aveți dreptul de a vizualiza aceasta pagină."
+            },
+            resolution_not_allowed: {
+                description: "Device-ul dumneavoastră nu are rezoluția necesară. Incercați sa îl rotiți."
             }
         }
     }

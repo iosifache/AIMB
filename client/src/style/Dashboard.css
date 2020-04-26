@@ -18,7 +18,7 @@
 
 #DashboardRoute #MapContainer{
     height: calc(100% - 56px);
-    width: 50%;
+    width: 30%;
     margin-top: -56px;
     z-index: 1;
     float: left;
@@ -35,29 +35,61 @@
     cursor: pointer;
 }
 
-#DashboardRoute table{
-    width: 50%;
+#DashboardRoute .alert.alert-dark{
+    background-color: var(--grey-lightest);
+    border-color: var(--grey-light);
 }
 
-#DashboardRoute table th:not(:first-child){
+#DashboardRoute .alert hr{
+    border-top-color: var(--grey-light);
+}
+
+#DashboardRoute #TableContainer{
+    width: 70%;
+    height: calc(100% - 56px);
+    float: left;
+    overflow-y: scroll;
+}
+
+#DashboardRoute #TableContainer .alert{
+    margin: 20px;
+}
+
+#DashboardRoute #TableContainer table th:not(:first-child){
     text-align: center;
 }
 
-#DashboardRoute table td:not(:first-child){
+#DashboardRoute #TableContainer table td:not(:first-child){
     text-align: center;
 }
 
-#DashboardRoute table .stripped{
+#DashboardRoute #TableContainer table .stripped{
     background: var(--blue);
     color: var(--white);
 }
 
-#DashboardRoute table .not-stripped{
+#DashboardRoute #TableContainer table .not-stripped{
     color: var(--grey-light);
 }
 
 #DashboardRoute .ToastNotification{
     z-index: 9999;
+}
+
+#DashboardRoute #PriceCalculator{
+    width: 70%;
+    padding: 20px;
+    float: left;
+}
+
+#DashboardRoute #PriceCalculator input{
+    margin-bottom: 10px;
+}
+
+#DashboardRoute #PriceCalculator button{
+    width: 100%;
+    background-color: var(--blue);
+    border: none;
 }
 
 #AlertsModal *{

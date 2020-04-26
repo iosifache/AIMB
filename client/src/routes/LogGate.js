@@ -2,7 +2,7 @@
 import React from "react"
 import {withRouter} from "react-router-dom"
 import PropTypes from "prop-types"
-import APIWorker from "../helpers/APIWorker"
+import APIWorkerInstance, {REGISTER_RESULT, LOGIN_RESULT} from "../helpers/APIWorker"
 
 // Import components
 import {Redirect} from "react-router-dom"
@@ -10,8 +10,8 @@ import {Container, Col, Button, Image} from "react-bootstrap"
 import {Player} from "video-react"
 import styled, {keyframes} from "styled-components"
 import {fadeIn} from "react-animations"
-import VerifiedInputControl from "../components/VerifiedInputControl"
-import ToastNotification from "../components/ToastNotification"
+import VerifiedInputControl, {VERIFIED_STATE} from "../components/VerifiedInputControl"
+import ToastNotification, {FIXED_POSITION} from "../components/ToastNotification"
 
 // Import stylesheets
 import "../style/Baseline.css"
@@ -53,15 +53,15 @@ class LogGate extends React.Component{
 		inputs: {
 			full_name: {
 				value: "",
-				validity: "empty"
+				validity: VERIFIED_STATE.EMPTY
 			},
 			email: {
 				value: "",
-				validity: "empty"
+				validity: VERIFIED_STATE.EMPTY
 			},
 			password: {
 				value: "",
-				validity: "empty"
+				validity: VERIFIED_STATE.EMPTY
 			}
 		},
 		redirect: {
@@ -152,7 +152,7 @@ class LogGate extends React.Component{
 		var new_state = this.state.inputs
 
 		new_state[name].value = value
-		new_state[name].validity = event.type
+		new_state[name].validity = Number(event.type)
 		this.setState({
 			inputs: new_state
 		})
@@ -163,17 +163,35 @@ class LogGate extends React.Component{
 	verifyLoginCredentials(email, password){
 
 		// Call the APIWorker's login methods
-		APIWorker.login(email, password).then(result => {
+		APIWorkerInstance.login(email, password).then(result => {
 
 			// Verify the result of the request
-			if (result)
+			switch (result){
 
-				// Launch notification and redirect
-				this.launchToastNotification(all_routes_config.toasts.titles.notification, this.state.sub_route_config.toasts.bodies.correct_credentials, () => {
-					setTimeout(() => {
-						this.redirectUser()
-					}, 3000)
-				})
+				case LOGIN_RESULT.SUCCESS:
+
+					// Launch notification and redirect
+					this.launchToastNotification(all_routes_config.toasts.titles.notification, this.state.sub_route_config.toasts.bodies.correct_credentials, () => {
+						setTimeout(() => {
+							this.redirectUser()
+						}, 3000)
+					})
+					break
+
+				case LOGIN_RESULT.INVALID_CREDENTIALS:
+					this.launchToastNotification(all_routes_config.toasts.titles.notification, this.state.sub_route_config.toasts.bodies.incorrect_credentials)
+					break
+				
+				case LOGIN_RESULT.FAIL:
+					this.launchToastNotification(all_routes_config.toasts.titles.notification, this.state.sub_route_config.toasts.bodies.fail)
+					break
+				
+				default:
+					break
+
+			}
+
+				
 
 		})
 
@@ -183,17 +201,33 @@ class LogGate extends React.Component{
 	createNewUser(full_name, email_address, password){
 			
 		// Call the APIWorker's register methods
-		APIWorker.register(full_name, email_address, password).then(result => {
-
+		APIWorkerInstance.register(full_name, email_address, password).then(result => {
+				
 			// Verify the result of the request
-			if (result)
+			switch (result){
 
-				// Launch notification and redirect
-				this.launchToastNotification(all_routes_config.toasts.titles.notification, this.state.sub_route_config.toasts.bodies.valid_credentials, () => {
-					setTimeout(() => {
-						this.redirectUser()
-					}, 3000)
-				})
+				case REGISTER_RESULT.SUCCESS:
+
+					// Launch notification and redirect
+					this.launchToastNotification(all_routes_config.toasts.titles.notification, this.state.sub_route_config.toasts.bodies.valid_credentials, () => {
+						setTimeout(() => {
+							this.redirectUser()
+						}, 3000)
+					})
+					break
+				
+				case REGISTER_RESULT.EMAIL_ALREADY_USED:
+					this.launchToastNotification(all_routes_config.toasts.titles.notification, this.state.sub_route_config.toasts.bodies.email_already_used)
+					break
+				
+				case REGISTER_RESULT.FAIL:
+					this.launchToastNotification(all_routes_config.toasts.titles.notification, this.state.sub_route_config.toasts.bodies.fail)
+					break
+
+				default:
+					break
+
+			}
 
 		})
 
@@ -219,7 +253,7 @@ class LogGate extends React.Component{
 			case LOGGATE_TYPES.REGISTER:
 
 				// Verify input fields
-				if (this.state.inputs.full_name.validity === "legal" && this.state.inputs.email.validity === "legal" && this.state.inputs.password.validity === "legal"){
+				if (this.state.inputs.full_name.validity === VERIFIED_STATE.LEGAL && this.state.inputs.email.validity === VERIFIED_STATE.LEGAL && this.state.inputs.password.validity === VERIFIED_STATE.LEGAL){
 					this.createNewUser(this.state.inputs.full_name.value, this.state.inputs.email.value, this.state.inputs.password.value)
 					return
 				}
@@ -228,7 +262,7 @@ class LogGate extends React.Component{
 			case LOGGATE_TYPES.LOGIN:
 
 				// Verify input fields
-				if (this.state.inputs.email.validity === "legal" && this.state.inputs.password.validity === "legal"){
+				if (this.state.inputs.email.validity === VERIFIED_STATE.LEGAL && this.state.inputs.password.validity === VERIFIED_STATE.LEGAL){
 					this.verifyLoginCredentials(this.state.inputs.email.value, this.state.inputs.password.value)
 					return
 				}
@@ -266,7 +300,7 @@ class LogGate extends React.Component{
 		var inputs = this.state.sub_route_config.inputs.map((element, index) => {
 			return (
 				<VerifiedInputControl 
-					type={element.type} verifiedType={element.verified_type} 
+					verifiedType={element.verified_type} 
 					name={element.name} 
 					placeholder={element.placeholder} 
 					onChange={this.handleChange} 
@@ -289,7 +323,7 @@ class LogGate extends React.Component{
 				<Container className="BackgroundVideoFilter"></Container>
 
 				{/* Inputs */}
-				<Col md={{span: 6, offset: 3}} className="FloatingContainer">
+				<Col lg={{span: 6, offset: 3}} className="FloatingContainer">
 					<FadeInAnimation>
 						<Image src={all_routes_config.logo.black_source}></Image>
 						{inputs}
@@ -300,7 +334,7 @@ class LogGate extends React.Component{
 				</Col>
 
 				{/* Bottom label */}
-				<Col md={{span: 6, offset: 3}} className="BottomLabel">
+				<Col lg={{span: 6, offset: 3}} className="BottomLabel">
 					<FadeInAnimation>
 						{this.state.sub_route_config.labels.first_part}
 						<a href={this.state.label.link}>
@@ -316,7 +350,8 @@ class LogGate extends React.Component{
 					body={this.state.toast.body}
 					delay={all_routes_config.toasts.duration}
 					refreshToken={this.state.toast.refresh_token}
-					fixed="bottom-left" 
+					fixed={FIXED_POSITION.BOTTOM_LEFT}
+					id="LogGateToastNotification"
 				/>
 
 			</div>

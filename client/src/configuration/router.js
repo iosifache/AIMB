@@ -5,7 +5,8 @@ const config = {
     register: "/register",
     dashboard: "/dashboard",
 	loading: "/loading",
-	malformated: "/malformated",
+	not_found: "/not_found",
+	not_authorized: "/not_authorized",
 	default: "*"
 }
 

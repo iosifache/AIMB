@@ -1,7 +1,7 @@
 // Define configuration object
 const config = {
     details: {
-        host: "http://192.168.111.128",
+        host: "http://localhost",
         port: "3001"
     },
     routes: {

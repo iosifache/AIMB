@@ -1,0 +1,40 @@
+#ErrorRoute{
+    min-height: 100%;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    text-align: center;
+    background-color: var(--white);
+}
+
+#ErrorRoute .ErrorContainer{
+    margin: 0 auto;
+    display: inline;
+}
+
+#ErrorRoute .ErrorContainer img{
+    width: 200px;
+    margin-top: -20px;
+}
+
+#ErrorRoute .ErrorContainer div{
+    border-left: 3px solid black;
+    margin-left: 20px;
+    padding-left: 20px;
+    float: right;
+    font-size: 18px;
+    font-weight: 300;
+}
+
+#ErrorRoute .ErrorContainer div b{
+    font-weight: 900;
+}
+
+@media all and (max-width: 900px){
+    #ErrorRoute .ErrorContainer div{
+        margin-top: 10px;
+        display: block;
+        float: none;
+        border-left: none;
+    }
+}

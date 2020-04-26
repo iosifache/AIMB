@@ -42,7 +42,7 @@ class RequestProcessor:
 
                 # Return
                 return {
-                    "logged": True,
+                    "status": "success",
                     "account_details": {
                         "full_name": result["full_name"]
                     }
@@ -50,7 +50,7 @@ class RequestProcessor:
 
         # Return
         return {
-            "logged": False
+            "status": "invalid_credentials"
         }
 
     # Public method that registers an account
@@ -60,7 +60,21 @@ class RequestProcessor:
         self._database_worker.use_collection(DatabaseConfiguration.Databases.AIMB.Collections.Accounts.NAME)
 
         # Create user and get its dictionary representation
-        account = Account(email_address, plain_password, full_name)
+        account = Account(email_address)
+        dict_account = account.convert_to_dict()
+
+        # Search the account
+        result = self._database_worker.query(dict_account)
+
+        # Print
+        if (result):
+            return {
+                "status": "email_already_used"
+            }
+
+        # Add new data to the account if it doens't already exists
+        account.plain_password = plain_password
+        account.full_name = full_name
         dict_account = account.convert_to_dict()
 
         # Insert the account
@@ -71,10 +85,10 @@ class RequestProcessor:
 
             # Return
             return {
-                "created": True
+                "status": "success"
             }
 
         # Return
         return {
-            "created": False
+            "status": "failed"
         }
