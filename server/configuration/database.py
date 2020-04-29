@@ -9,3 +9,5 @@ class DatabaseConfiguration:
                     NAME = "accounts"
                     class Constraints:
                         SALT_LENGTH = 10
+                class Sectors:
+                    NAME = "sectors"

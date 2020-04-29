@@ -1,5 +1,6 @@
 # Import handcrafted modules
 from data_containers.account import Account
+from data_containers.sector import Sector
 from modules.database_worker import DatabaseWorker
 from configuration.database import DatabaseConfiguration
 
@@ -27,7 +28,7 @@ class RequestProcessor:
         dict_account = account.convert_to_dict()
         
         # Search his account
-        result = self._database_worker.query(dict_account)
+        result = self._database_worker.query_one(dict_account)
 
         # Verify if exists
         if (result):
@@ -64,9 +65,9 @@ class RequestProcessor:
         dict_account = account.convert_to_dict()
 
         # Search the account
-        result = self._database_worker.query(dict_account)
+        result = self._database_worker.query_one(dict_account)
 
-        # Print
+        # If an account exists, then return
         if (result):
             return {
                 "status": "email_already_used"
@@ -78,7 +79,7 @@ class RequestProcessor:
         dict_account = account.convert_to_dict()
 
         # Insert the account
-        result = self._database_worker.insert_value(dict_account)
+        result = self._database_worker.insert_one(dict_account)
 
         # Verify if inserted
         if (result):
@@ -92,3 +93,56 @@ class RequestProcessor:
         return {
             "status": "failed"
         }
+
+    # Public method for logout an user
+    def logout(self) -> dict:
+
+        # Return
+        return {
+            "status": "success"
+        }
+
+    # Public method for getting alerts for one user
+    def get_alerts(self, email_address: str) -> dict:
+
+        # Create user and get its dictionary representation
+        account = Account(email_address)
+        dict_account = account.convert_to_dict()
+
+        # Search the account
+        result = self._database_worker.query_one(dict_account)
+
+        # Verify the result
+        if (result):
+            
+            # Return
+            return {
+                "alerts" : result["alerts"]
+            }
+    
+    # Public method for getting sectors data
+    def get_sectors_data(self) -> dict:
+
+        # Move to specific collection in database
+        self._database_worker.use_collection(DatabaseConfiguration.Databases.AIMB.Collections.Sectors.NAME)
+
+        # Get sectors data
+        result = self._database_worker.query_all()
+
+        # Verify the result
+        if (result):
+
+            # Create containers
+            sectors = []
+            for sector in result:
+                sectors.append(Sector(sector["name"], sector["latitude"], sector["longitude"], sector["average_price_per_room"], sector["average_price_per_square_meter"], sector["average_air_quality"], sector["score"]))
+
+            # Create dictionaries
+            sectors_dict = []
+            for sector in sectors:
+                sectors_dict.append(sector.convert_to_dict())
+
+            # Return
+            return {
+                "sectors_data" : sectors_dict
+            }

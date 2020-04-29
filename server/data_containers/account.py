@@ -13,14 +13,16 @@ class Account:
     email_address: str = None
     salt: str = None
     plain_password: str = None
+    alerts: list = None
 
     # Contructor
-    def __init__(self, email_address: str, plain_password: str = None, full_name: str = None, salt: str = None) -> None:
+    def __init__(self, email_address: str, plain_password: str = None, full_name: str = None, salt: str = None, alerts: list = None) -> None:
         
         # Initialize members
         self.email_address = email_address
         self.plain_password = plain_password
         self.full_name = full_name
+        self.alerts = alerts
 
         # Create salt if it is not specified
         hash_length = DatabaseConfiguration.Databases.AIMB.Collections.Accounts.Constraints.SALT_LENGTH
@@ -35,13 +37,14 @@ class Account:
         result = {}
         
         # Initialize members of dict
-        if (self.email_address):
-            result["email_address"] = self.email_address
+        result["email_address"] = self.email_address
         if (self.full_name):
             result["full_name"] = self.full_name
         if (self.plain_password):
             result["salt"] = self.salt
             result["hashed_password"] = PasswordHasher().hash_password(self.plain_password, self.salt)
+        if (self.alerts):
+            result["alerts"] = self.alerts
 
         # Return
         return result

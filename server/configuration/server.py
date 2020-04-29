@@ -11,5 +11,11 @@ class ServerConfiguration:
         HOME = "/"
         LOGIN = "/login"
         REGISTER = "/register"
+        LOGOUT = "/logout"
+        GET_ALERTS = "/get_alerts"
+        GET_SECTORS_DATA = "/get_sectors_data"
+    class SessionMembers:
+        LOGGED_USER_EMAIL_ADDRESS = "logged_user_email_address"
     class ErrorCodes:
         BAD_REQUESTS = 400
+        UNAUTHENTICATED = 401

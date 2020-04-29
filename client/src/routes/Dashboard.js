@@ -21,7 +21,7 @@ import "../style/Dashboard.css"
 // Import configuration
 import configuration from "../configuration/index"
 import {Row} from "react-bootstrap"
-import APIWorkerInstance from "../helpers/APIWorker"
+import APIWorkerInstance, {LOGOUT_RESULT} from "../helpers/APIWorker"
 
 // Get configuration
 var all_routes_config = configuration.routes.all
@@ -143,16 +143,28 @@ class Dashboard extends React.Component{
 
 		var redirect_state = this.state.redirect
 
-		if (APIWorkerInstance.logout()){
-			this.launchToastNotification(all_routes_config.toasts.titles.notification, route_config.toasts.bodies.logout, () => {
-				setTimeout(() => {
-					redirect_state.needed = true
-					this.setState({
-						redirect: redirect_state
+		// Call the APIWorker's logout methods
+		APIWorkerInstance.logout().then(result => {
+				
+			// Verify the result of the request
+			switch (result){
+
+				case LOGOUT_RESULT.SUCCESS:
+					this.launchToastNotification(all_routes_config.toasts.titles.notification, route_config.toasts.bodies.logout, () => {
+						setTimeout(() => {
+							redirect_state.needed = true
+							this.setState({
+								redirect: redirect_state
+							})
+						}, 3000)
 					})
-				}, 3000)
-			})
-		}
+					break
+				default:
+					break
+			
+			}
+
+		})
 
 	}
 

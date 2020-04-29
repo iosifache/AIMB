@@ -48,5 +48,8 @@ npm install
 | Name             | Link                                                                |
 |------------------|---------------------------------------------------------------------|
 | Flask            | [homepage](https://flask.palletsprojects.com)                       |
+| Flask-Session    | [homepage](https://pythonhosted.org/Flask-Session/)                 |
+| Flask-CORS       | [homepage](https://flask-cors.readthedocs.io/en/latest/)            |
 | pymongo          | [Github repository](https://github.com/mongodb/mongo-python-driver) |
+| Requests         | [homepage](https://requests.readthedocs.io/en/master/)              |
 | pycrypto         | [homepage](https://www.dlitz.net/software/pycrypto/)                |

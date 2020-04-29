@@ -58,7 +58,7 @@ class DatabaseWorker:
         return True
 
     # Public method for inserting a value into a collection
-    def insert_value(self, new: dict) -> bool:
+    def insert_one(self, new: dict) -> bool:
 
         # Insert value
         result = self._used_collection.insert_one(new)
@@ -66,11 +66,39 @@ class DatabaseWorker:
         # Return
         return result.acknowledged
 
-    # Public method for querying the collection
-    def query(self, query: dict) -> dict:
+    # Public method for inserting multiple values into a collection
+    def insert_many(self, many: list) -> bool:
+
+        # Insert values
+        result = self._used_collection.insert_many(many)
+
+        # Return
+        return result.acknowledged
+
+
+    # Public method for querying the collection for one result
+    def query_one(self, query: dict) -> dict:
 
         # Query collection
         result = self._used_collection.find_one(query)
         
         # Return
         return result
+
+    # Public method for querying the collection for all results
+    def query_all(self) -> dict:
+
+        # Query collection
+        result = self._used_collection.find({})
+        
+        # Return
+        return result
+
+    # Public method for delete all values from a collection
+    def delete_all(self) -> bool:
+
+        # Delete all documents
+        result = self._used_collection.delete_many({})
+
+        # Return
+        return result.acknowledged
