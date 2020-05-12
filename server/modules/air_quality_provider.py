@@ -71,9 +71,7 @@ class AirQualityProvider:
 
 		# Get air quality
 		details_about_location = response.json()
-		print(details_about_location)
 		air_quality = details_about_location["data"]["current"]["pollution"]["aqius"]
-		print(air_quality)
 
 		# Return
 		return int(air_quality)
@@ -93,20 +91,22 @@ class AirQualityProvider:
 			# Create containers
 			sectors: list = []
 			for sector in result:
-				print(sector)
 				sectors.append(Sector(sector["name"], sector["latitude"], sector["longitude"], sector["average_price_per_room"], sector["average_price_per_square_meter"], sector["average_air_quality"], sector["score"]))
 
 			# Query the API
 			for sector in sectors:
+
 				aqi = self._get_air_quality_for_coordinates(sector.latitude, sector.longitude)
 				grade = self._convert_aqi_to_grade(aqi)
 				sector.average_air_quality = grade
+
+				# Print
+				#print("[+] New grade for {} is {}, computed by AQI {}".format(sector.name, grade, aqi))		
 
 			# Get all dictionaries into one list
 			sectors_dict = []
 			for sector in sectors:
 				sectors_dict.append(sector.convert_to_dict())
-			print(sectors_dict)
 
 			# Remove all documents from collection before inserting new ones
 			self._database_worker.delete_all()

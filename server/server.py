@@ -51,9 +51,6 @@ def login_route():
     # Set session if the login was successfully
     if (result["status"] == "success"):
         session[ServerConfiguration.SessionMembers.LOGGED_USER_EMAIL_ADDRESS] = email_address
-
-    print(session)
-
     # Return
     return jsonify(result)
 
@@ -87,7 +84,6 @@ def register_route():
 def logout():
 
     # Verify if user is logged
-    print(session)
     if (ServerConfiguration.SessionMembers.LOGGED_USER_EMAIL_ADDRESS not in session):
         abort(ServerConfiguration.ErrorCodes.UNAUTHENTICATED)
 

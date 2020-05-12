@@ -92,6 +92,14 @@
     border: none;
 }
 
+#DashboardRoute #PriceCalculator .PriceResult{
+    margin-top: 10px;
+}
+
+#DashboardRoute #PriceCalculator b{
+    font-weight: 900;
+}
+
 #AlertsModal *{
     transition: none;
 }
@@ -103,6 +111,14 @@
     top: 15px;
     color: var(--black);
     cursor: pointer;
+}
+
+#AlertsModal .list-group-item.EnabledAlert{
+    border-bottom: var(--green) solid 3px;
+}
+
+#AlertsModal .list-group-item.DisabledAlert{
+    border-bottom: var(--red) solid 3px;
 }
 
 #AlertsModal .modal-footer .btn:first-child{

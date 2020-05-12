@@ -156,6 +156,10 @@ const config = {
             },
             buttons: {
                 compute: "Calculează"
+            },
+            labels: {
+                prepend: "Prețul apartamentului configurat este de ",
+                append: " de lei."
             }
         },
         toasts: {

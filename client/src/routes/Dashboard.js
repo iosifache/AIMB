@@ -1,7 +1,9 @@
 // Import libraries
 import React from "react"
 import {withRouter} from "react-router"
-import MediaQuery from 'react-responsive'
+import MediaQuery from "react-responsive"
+import APIWorkerInstance, {LOGOUT_RESULT} from "../helpers/APIWorker"
+import InsideSectorMapperInstance from "../helpers/InsideSectorMapper"
 
 // Import components
 import {Container, Navbar, Nav, Modal, Button, ListGroup, Dropdown, InputGroup, Alert} from "react-bootstrap"
@@ -21,7 +23,6 @@ import "../style/Dashboard.css"
 // Import configuration
 import configuration from "../configuration/index"
 import {Row} from "react-bootstrap"
-import APIWorkerInstance, {LOGOUT_RESULT} from "../helpers/APIWorker"
 
 // Get configuration
 var all_routes_config = configuration.routes.all
@@ -46,7 +47,7 @@ class Dashboard extends React.Component{
 		viewport: route_config.map.default_viewport,
 		data: APIWorkerInstance.getRecentSectorsData(),
 		highlighted_lines: [],
-		current_view: VIEW_VARIANTS.CALCULATOR,
+		current_view: VIEW_VARIANTS.BIRDVIEW,
 		modal_state: {
 			opened: false,
 			variant: MODAL_VARIANTS.LIST,
@@ -60,6 +61,7 @@ class Dashboard extends React.Component{
 		},
 		calculator_state: {
 			sector_id: {
+				id: "",
 				value: "",
 				validity: VERIFIED_STATE.EMPTY
 			},
@@ -71,6 +73,10 @@ class Dashboard extends React.Component{
 				value: "",
 				validity: VERIFIED_STATE.EMPTY
 			},
+			result: {
+				visibility: false,
+				price: -1
+			}
 		},
 		user_data: {
 			existent_alerts: APIWorkerInstance.getUsersAlerts()
@@ -186,16 +192,52 @@ class Dashboard extends React.Component{
 
 	}
 
+	// Method that computes the sector by clicked point
+	chooseLocationOnMap(event){
+
+		var latitude = event.lngLat[0]
+		var longitude = event.lngLat[1]
+		var new_state, sector_id, sector_name, sector_validity
+
+		if (this.state.current_view === VIEW_VARIANTS.CALCULATOR){
+
+			// Get choosed sector
+			sector_id = InsideSectorMapperInstance.mapPoint(latitude, longitude)
+			if (sector_id !== -1){
+				sector_name = route_config.map.pinned_locations[sector_id].name
+				sector_validity = VERIFIED_STATE.LEGAL
+			}
+			else{
+				sector_name = ""
+				sector_validity = VERIFIED_STATE.EMPTY
+			}
+
+			// Set state
+
+			new_state = this.state
+			new_state.calculator_state.sector_id = {
+				id: sector_id,
+				value: sector_name,
+				validity: sector_validity
+			}
+			new_state.calculator_state.result.visibility = false
+			this.setState(new_state)
+
+		}
+
+	}
+
 	// Method that sets a value from the calculator
 	setNewCalculatorValue = event => {
 
 		var {name, value} = event.detail.target
-		var old_modal_state = this.state.calculator_state
+		var old_calculator_state = this.state.calculator_state
 
-		old_modal_state[name].value = value
-		old_modal_state[name].validity = Number(event.type)
+		old_calculator_state[name].value = value
+		old_calculator_state[name].validity = Number(event.type)
+		old_calculator_state.result.visibility = false
 		this.setState({
-			calculator_state: old_modal_state
+			calculator_state: old_calculator_state
 		})
 
 	}
@@ -203,7 +245,28 @@ class Dashboard extends React.Component{
 	// Method that computes the value of the apartment
 	computeApartmentPrice(){
 
-		//
+		var sector_id, number_of_rooms, number_of_square_meters, sector_data, price
+		var old_calculator_state = this.state.calculator_state
+
+		if (this.state.calculator_state.sector_id.validity === VERIFIED_STATE.LEGAL && this.state.calculator_state.number_of_rooms.validity === VERIFIED_STATE.LEGAL && this.state.calculator_state.number_of_square_meters.validity === VERIFIED_STATE.LEGAL){
+
+			// Set variables
+			sector_id = this.state.calculator_state.sector_id.id
+			number_of_rooms = this.state.calculator_state.number_of_rooms.value
+			number_of_square_meters = this.state.calculator_state.number_of_square_meters.value
+
+			// Get choosed sector data
+			sector_data = this.state.data[sector_id]
+
+			// Compute price
+			price = Math.floor((sector_data.average_price_per_room * Number(number_of_rooms) + sector_data.average_price_per_square_meter * Number(number_of_square_meters)) / 2)
+			old_calculator_state.result.visibility = true
+			old_calculator_state.result.price = price
+			this.setState({
+				calculator_state: old_calculator_state
+			})
+
+		}
 
 	}
 
@@ -387,9 +450,49 @@ class Dashboard extends React.Component{
 			var score = route_config.modals.both.scores[element.score_id]
 			var sector = route_config.map.pinned_locations[element.sector_id].name
 			var operation = route_config.modals.both.operations[element.operation_id]
+			
+			// Check if alert is active
+			var sector_data, compared_value
+			var is_enabled = false
+			var alert_class = "DisabledAlert"
+			sector_data = this.state.data[element.sector_id]
+			switch (element.score_id){
+				case 0:
+					compared_value = sector_data.average_price_per_room
+					break
+				case 1:
+					compared_value = sector_data.average_price_per_square_meter
+					break
+				case 2:
+					compared_value = sector_data.average_air_quality
+					break
+				case 3:
+					compared_value = sector_data.score
+					break
+				default:
+					break
+			}
+			switch (element.operation_id){
+				case 0:
+					if (compared_value < element.score_id)
+						is_enabled = true
+					break
+				case 1:
+					if (compared_value === element.score_id)
+						is_enabled = true
+					break
+				case 2:
+					if (compared_value > element.score_id)
+						is_enabled = true
+					break
+				default:
+					break
+			}
+			if (is_enabled)
+				alert_class = "EnabledAlert"
 
 			return (
-				<ListGroup.Item>
+				<ListGroup.Item className={alert_class}>
 					{route_config.modals.both.labels.value} <b>{score}</b> {route_config.modals.both.labels.for}  <b>{sector}</b> {route_config.modals.both.labels.is} <b>{operation}</b> {route_config.modals.both.labels.compared_value} <b>{element.value}</b>{route_config.modals.both.labels.end} 
 					<FaTrashAlt key={key} onClick={this.removeExistentAlert.bind(this, key)}/>
 				</ListGroup.Item>
@@ -613,6 +716,7 @@ class Dashboard extends React.Component{
 							width="100%" height="100%" className="map"
 							onViewportChange={this.changeMapViewport}
 							mapStyle="mapbox://styles/iosifache/ck8dao8c20voi1io4kjur93v6"
+							onClick={this.chooseLocationOnMap.bind(this)}
 						>
 							{markers}
 						</ReactMapGL>
@@ -690,6 +794,15 @@ class Dashboard extends React.Component{
 								<Button onClick={this.computeApartmentPrice.bind(this)}>
 									{route_config.calculator.buttons.compute}
 								</Button>
+
+								{/* Price result */}
+								<Alert variant="dark" show={calculator_state.result.visibility} className="PriceResult">
+									{route_config.calculator.labels.prepend}
+									<b>
+										{calculator_state.result.price}
+									</b>
+									{route_config.calculator.labels.append}
+								</Alert>
 
 							</div>
 
