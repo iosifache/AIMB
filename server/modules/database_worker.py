@@ -102,3 +102,12 @@ class DatabaseWorker:
 
         # Return
         return result.acknowledged
+    
+    # Public method for updating a record from a collection
+    def update(self, selector: dict, modifier: dict) -> bool:
+
+        # Update the record
+        result = self._used_collection.update(selector, modifier)
+
+        # Return      
+        return (result["ok"] == 1)

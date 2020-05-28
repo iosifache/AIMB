@@ -1,7 +1,7 @@
 // Import libraries
 import React from "react"
 import {withRouter} from "react-router"
-import MediaQuery from "react-responsive"
+import PropTypes from "prop-types"
 import APIWorkerInstance, {LOGOUT_RESULT} from "../helpers/APIWorker"
 import InsideSectorMapperInstance from "../helpers/InsideSectorMapper"
 
@@ -14,7 +14,6 @@ import {FaCity, FaTrashAlt, FaBell, FaChevronRight, FaMap, FaCalculator} from "r
 import VerifiedInputControl, {VERIFIED_TYPE, VERIFIED_STATE} from "../components/VerifiedInputControl"
 import SortableTable from "../components/SortableTable"
 import ToastNotification, {FIXED_POSITION} from "../components/ToastNotification"
-import Error, {ERROR_TYPES} from "../routes/Error"
 
 // Import stylesheets
 import "../style/Baseline.css"
@@ -45,7 +44,7 @@ class Dashboard extends React.Component{
 	// Default state
 	default_state = {
 		viewport: route_config.map.default_viewport,
-		data: APIWorkerInstance.getRecentSectorsData(),
+		data: [],
 		highlighted_lines: [],
 		current_view: VIEW_VARIANTS.BIRDVIEW,
 		modal_state: {
@@ -57,7 +56,8 @@ class Dashboard extends React.Component{
 				operation_id: -1,
 				value: "",
 				valid_value: VERIFIED_STATE.EMPTY
-			}
+			},
+			active_alerts: 0
 		},
 		calculator_state: {
 			sector_id: {
@@ -79,7 +79,9 @@ class Dashboard extends React.Component{
 			}
 		},
 		user_data: {
-			existent_alerts: APIWorkerInstance.getUsersAlerts()
+			full_name: "",
+			updated_alerts: false,
+			existent_alerts: []
 		},
 		redirect: {
 			needed: false,
@@ -92,6 +94,41 @@ class Dashboard extends React.Component{
 		}
 	}
 	state = JSON.parse(JSON.stringify(this.default_state))
+
+	// Get datas about logged client
+	componentDidMount(){
+
+		const {location} = this.props
+
+		// Get datas about sectors
+		if (this.state.data.length === 0)
+
+			APIWorkerInstance.getRecentSectorsData().then(result => {
+
+				// Refresh data
+				this.setState({
+					data: result
+				})
+
+			})
+
+		// Set user data
+		if (this.state.user_data.existent_alerts.length === 0)
+
+			APIWorkerInstance.getAlerts().then(result => {
+
+				// Refresh data
+				this.setState({
+					user_data: {
+						full_name: location.state.full_name,
+						updated_alerts: true,
+						existent_alerts: result || []
+					}
+				})
+
+			})
+
+	}
 	
 	// Method that launches a toast notification
 	launchToastNotification(title, body, callback){
@@ -121,11 +158,21 @@ class Dashboard extends React.Component{
 
 		if (this.state.current_view === VIEW_VARIANTS.BIRDVIEW)
 
-			// Refresh data
-			this.setState({
-				data: APIWorkerInstance.getRecentSectorsData()
-			}, () => {
-				this.launchToastNotification(all_routes_config.toasts.titles.notification, route_config.toasts.bodies.refreshed_datas)
+			APIWorkerInstance.getRecentSectorsData().then(result => {
+
+				var old_modal_state = this.state.modal_state
+
+				// Highlight active alerts
+				old_modal_state.active_alerts = 0
+
+				// Refresh data
+				this.setState({
+					data: result,
+					modal_state: old_modal_state
+				}, () => {
+					this.launchToastNotification(all_routes_config.toasts.titles.notification, route_config.toasts.bodies.refreshed_datas)
+				})
+
 			})
 
 		else
@@ -270,12 +317,25 @@ class Dashboard extends React.Component{
 
 	}
 
+	// Method that sets the activeness of the bell icon from menu
+	setUnreadAlerts(count){
+
+		var old_modal_state = this.state.modal_state
+
+		old_modal_state.active_alerts = count
+		this.setState({
+			modal_state: old_modal_state
+		})
+
+	}
+
 	// Method that sets the modal's opening
 	setModalOpening(state){
 
 		var old_modal_state = this.state.modal_state
 
 		old_modal_state.opened = state
+		old_modal_state.active_alerts = -1
 		if (!state){
 			old_modal_state.variant = MODAL_VARIANTS.LIST
 			this.clearNewAlertDetailsFromModal()
@@ -394,6 +454,13 @@ class Dashboard extends React.Component{
 		const {viewport, modal_state, data, calculator_state} = this.state
 		const {history, location} = this.props
 		var table_data = []
+		var active_alerts_count = 0
+
+		if (!data || data.length === 0) return null
+		if (!this.state.user_data.updated_alerts) return null
+
+		console.log(JSON.stringify(data))
+		console.log(data.length)
 
 		// Check if redirect
 		if (this.state.redirect.needed){
@@ -414,6 +481,7 @@ class Dashboard extends React.Component{
 		})
 
 		// Generate markers for map
+		console.log(route_config.map.pinned_locations)
 		var markers = route_config.map.pinned_locations.map((element, index) => {
 			return (
 				<Marker 
@@ -452,7 +520,7 @@ class Dashboard extends React.Component{
 			var operation = route_config.modals.both.operations[element.operation_id]
 			
 			// Check if alert is active
-			var sector_data, compared_value
+			var sector_data, compared_value, alert_value
 			var is_enabled = false
 			var alert_class = "DisabledAlert"
 			sector_data = this.state.data[element.sector_id]
@@ -472,24 +540,27 @@ class Dashboard extends React.Component{
 				default:
 					break
 			}
+			alert_value = Number(element.value)
 			switch (element.operation_id){
 				case 0:
-					if (compared_value < element.score_id)
+					if (compared_value < alert_value)
 						is_enabled = true
 					break
 				case 1:
-					if (compared_value === element.score_id)
+					if (compared_value === alert_value)
 						is_enabled = true
 					break
 				case 2:
-					if (compared_value > element.score_id)
+					if (compared_value > alert_value)
 						is_enabled = true
 					break
 				default:
 					break
 			}
-			if (is_enabled)
+			if (is_enabled){
 				alert_class = "EnabledAlert"
+				active_alerts_count++
+			}
 
 			return (
 				<ListGroup.Item className={alert_class}>
@@ -499,6 +570,10 @@ class Dashboard extends React.Component{
 			)
 
 		})
+
+		// Check if number of active alerts is greater than 0
+		if (active_alerts_count > 0 && this.state.modal_state.active_alerts === 0)
+			this.setUnreadAlerts(active_alerts_count)
 
 		// Get selected options for dropdowns
 		var score_class, sector_class, operation_class
@@ -533,156 +608,156 @@ class Dashboard extends React.Component{
 
 			<div id="DashboardRoute">
 
-				<MediaQuery minWidth={1000}>
+				{/* Modal for working with alerts */}
+				<Modal 
+					id="AlertsModal" 
+					show={modal_state.opened}
+					size="lg" centered
+					onHide={this.setModalOpening.bind(this, false)}
+				>
 
-					{/* Modal for working with alerts */}
-					<Modal 
-						id="AlertsModal" 
-						show={modal_state.opened}
-						size="lg" centered
-						onHide={this.setModalOpening.bind(this, false)}
-					>
-
-						{/* Modal header */}
-						<Modal.Header closeButton>
-							<Modal.Title>
-								{
-									(this.state.modal_state.variant === MODAL_VARIANTS.LIST) ? (
-										route_config.modals.list.title
-									) :
-									(
-										route_config.modals.add.title
-									)
-								}
-							</Modal.Title>
-						</Modal.Header>
-
-						{/* Modal body */}
-						<Modal.Body>
-							<Container>
-								{
-									(this.state.modal_state.variant === MODAL_VARIANTS.LIST) ? (
-											<ListGroup>
-												{existent_alerts}
-											</ListGroup>
-									) :
-									(
-										<Row>
-											<InputGroup className="mb-3">
-												<InputGroup.Prepend className="InputPrepend">
-													<InputGroup.Text id="basic-addon1">{route_config.modals.both.labels.value}</InputGroup.Text>
-												</InputGroup.Prepend>
-												<Dropdown 
-													className={score_class} 
-													drop="right" 
-													onSelect={(eventKey, event) => {this.setNewAlertDropdownValue(eventKey, event)}}
-												>
-													<Dropdown.Toggle variant="success" id="dropdown-basic">
-														{selected_score}
-														<FaChevronRight/>
-													</Dropdown.Toggle>
-													<Dropdown.Menu>
-														{score_options}
-													</Dropdown.Menu>
-												</Dropdown>
-											</InputGroup>
-											<InputGroup className="mb-3">
-												<InputGroup.Prepend className="InputPrepend">
-													<InputGroup.Text id="basic-addon1">{route_config.modals.both.labels.for}</InputGroup.Text>
-												</InputGroup.Prepend>
-												<Dropdown 
-													className={sector_class}
-													drop="right"
-													onSelect={(eventKey, event) => {this.setNewAlertDropdownValue(eventKey, event)}}
-												>
-													<Dropdown.Toggle variant="success" id="dropdown-basic">
-														{selected_sector}
-														<FaChevronRight/>
-													</Dropdown.Toggle>
-													<Dropdown.Menu>
-														{sector_options}
-													</Dropdown.Menu>
-												</Dropdown>
-											</InputGroup>
-											<InputGroup className="mb-3">
-												<InputGroup.Prepend className="InputPrepend">
-													<InputGroup.Text id="basic-addon1">{route_config.modals.both.labels.is}</InputGroup.Text>
-												</InputGroup.Prepend>
-												<Dropdown 
-													className={operation_class}
-													drop="right" 
-													onSelect={(eventKey, event) => {this.setNewAlertDropdownValue(eventKey, event)}}
-												>
-													<Dropdown.Toggle variant="success" id="dropdown-basic">
-														{selected_operation}
-														<FaChevronRight/>
-													</Dropdown.Toggle>
-													<Dropdown.Menu>
-														{operation_options}
-													</Dropdown.Menu>
-												</Dropdown>
-											</InputGroup>
-											<InputGroup className="mb-3">
-												<InputGroup.Prepend className="InputPrepend">
-													<InputGroup.Text id="basic-addon1">{route_config.modals.both.labels.compared_value}</InputGroup.Text>
-												</InputGroup.Prepend>
-												<VerifiedInputControl 
-													verifiedType={VERIFIED_TYPE.NUMBERS}
-													name="value" 
-													value={modal_state.new_alert.value} 
-													placeholder="" 
-													onChange={this.setNewAlertValue.bind(this)}
-												/>
-											</InputGroup>
-										</Row>
-									)
-								}
-							</Container>
-						</Modal.Body>
-
-						{/* Modal footer */}
-						<Modal.Footer>
-							<Button onClick={this.setModalOpening.bind(this, false)}>
-								{route_config.modals.both.buttons.close}
-							</Button>
-							<Button onClick={this.toggleModalVariant.bind(this)}>
-								{
-									(this.state.modal_state.variant === MODAL_VARIANTS.LIST) ? (
-										route_config.modals.add.buttons.add
-									) :
-									(
-										route_config.modals.list.buttons.list
-									)
-								}
-							</Button>
+					{/* Modal header */}
+					<Modal.Header closeButton>
+						<Modal.Title>
 							{
-								(this.state.modal_state.variant === MODAL_VARIANTS.ADD) ? (
-									<Button className="add" onClick={this.addNewAlert.bind(this)}>
-										{route_config.modals.add.buttons.add_now}
-									</Button>
+								(this.state.modal_state.variant === MODAL_VARIANTS.LIST) ? (
+									route_config.modals.list.title
 								) :
 								(
-									""
+									route_config.modals.add.title
 								)
 							}
-						</Modal.Footer>
+						</Modal.Title>
+					</Modal.Header>
 
-					</Modal>
-
-					{/* Menu */}
-					<Navbar bg="dark" variant="dark" id="menu">
+					{/* Modal body */}
+					<Modal.Body>
 						<Container>
-							<Navbar.Brand>
-								<img
-									alt={all_routes_config.app_details.name.short}
-									src={all_routes_config.logo.white_source}
-									className="d-inline-block align-top"
-								/>
-							</Navbar.Brand>
-							<Nav className="justify-content-end">
+							{
+								(this.state.modal_state.variant === MODAL_VARIANTS.LIST) ? (
+										<ListGroup>
+											{existent_alerts}
+										</ListGroup>
+								) :
+								(
+									<Row>
+										<InputGroup className="mb-3">
+											<InputGroup.Prepend className="InputPrepend">
+												<InputGroup.Text id="basic-addon1">{route_config.modals.both.labels.value}</InputGroup.Text>
+											</InputGroup.Prepend>
+											<Dropdown 
+												className={score_class} 
+												drop="right" 
+												onSelect={(eventKey, event) => {this.setNewAlertDropdownValue(eventKey, event)}}
+											>
+												<Dropdown.Toggle variant="success" id="dropdown-basic">
+													{selected_score}
+													<FaChevronRight/>
+												</Dropdown.Toggle>
+												<Dropdown.Menu>
+													{score_options}
+												</Dropdown.Menu>
+											</Dropdown>
+										</InputGroup>
+										<InputGroup className="mb-3">
+											<InputGroup.Prepend className="InputPrepend">
+												<InputGroup.Text id="basic-addon1">{route_config.modals.both.labels.for}</InputGroup.Text>
+											</InputGroup.Prepend>
+											<Dropdown 
+												className={sector_class}
+												drop="right"
+												onSelect={(eventKey, event) => {this.setNewAlertDropdownValue(eventKey, event)}}
+											>
+												<Dropdown.Toggle variant="success" id="dropdown-basic">
+													{selected_sector}
+													<FaChevronRight/>
+												</Dropdown.Toggle>
+												<Dropdown.Menu>
+													{sector_options}
+												</Dropdown.Menu>
+											</Dropdown>
+										</InputGroup>
+										<InputGroup className="mb-3">
+											<InputGroup.Prepend className="InputPrepend">
+												<InputGroup.Text id="basic-addon1">{route_config.modals.both.labels.is}</InputGroup.Text>
+											</InputGroup.Prepend>
+											<Dropdown 
+												className={operation_class}
+												drop="right" 
+												onSelect={(eventKey, event) => {this.setNewAlertDropdownValue(eventKey, event)}}
+											>
+												<Dropdown.Toggle variant="success" id="dropdown-basic">
+													{selected_operation}
+													<FaChevronRight/>
+												</Dropdown.Toggle>
+												<Dropdown.Menu>
+													{operation_options}
+												</Dropdown.Menu>
+											</Dropdown>
+										</InputGroup>
+										<InputGroup className="mb-3">
+											<InputGroup.Prepend className="InputPrepend">
+												<InputGroup.Text id="basic-addon1">{route_config.modals.both.labels.compared_value}</InputGroup.Text>
+											</InputGroup.Prepend>
+											<VerifiedInputControl 
+												verifiedType={VERIFIED_TYPE.NUMBERS}
+												name="value" 
+												value={modal_state.new_alert.value} 
+												placeholder="" 
+												onChange={this.setNewAlertValue.bind(this)}
+											/>
+										</InputGroup>
+									</Row>
+								)
+							}
+						</Container>
+					</Modal.Body>
+
+					{/* Modal footer */}
+					<Modal.Footer>
+						<Button onClick={this.setModalOpening.bind(this, false)}>
+							{route_config.modals.both.buttons.close}
+						</Button>
+						<Button onClick={this.toggleModalVariant.bind(this)}>
+							{
+								(this.state.modal_state.variant === MODAL_VARIANTS.LIST) ? (
+									route_config.modals.add.buttons.add
+								) :
+								(
+									route_config.modals.list.buttons.list
+								)
+							}
+						</Button>
+						{
+							(this.state.modal_state.variant === MODAL_VARIANTS.ADD) ? (
+								<Button className="add" onClick={this.addNewAlert.bind(this)}>
+									{route_config.modals.add.buttons.add_now}
+								</Button>
+							) :
+							(
+								""
+							)
+						}
+					</Modal.Footer>
+
+				</Modal>
+
+				{/* Menu */}
+				<Navbar collapseOnSelect expand="lg" bg="dark" variant="dark" id="menu">
+					<Container>
+						<Navbar.Brand>
+							<img
+								alt={all_routes_config.app_details.name.short}
+								src={all_routes_config.logo.white_source}
+								className="d-inline-block align-top"
+							/>
+						</Navbar.Brand>
+						<Navbar.Toggle/>
+						<Navbar.Collapse id="responsive-navbar-nav" className="justify-content-end">
+							<Nav>
 								<Nav.Item>
 									<Nav.Link onClick={this.moveToBirdview.bind(this)}>
-										<FaMap/>
+										<FaMap />
 										{route_config.menu.items.bird_view}
 									</Nav.Link>
 								</Nav.Item>
@@ -694,7 +769,14 @@ class Dashboard extends React.Component{
 								</Nav.Item>
 								<Nav.Item>
 									<Nav.Link onClick={this.setModalOpening.bind(this, true)}>
-										<FaBell/>
+										{
+											(this.state.modal_state.active_alerts > 0) ? (
+												<FaBell className="active"/>
+											) : (
+												<FaBell/>
+											)
+										}
+										
 										{route_config.menu.items.alerts}
 									</Nav.Link>
 								</Nav.Item>
@@ -705,124 +787,123 @@ class Dashboard extends React.Component{
 									</Nav.Link>
 								</Nav.Item>
 							</Nav>
-						</Container>
-					</Navbar>
+						</Navbar.Collapse>
+					</Container>
+				</Navbar>
 
-					{/* Map */}
-					<div id="MapContainer">
-						<ReactMapGL
-							{...viewport}
-							mapboxApiAccessToken={all_routes_config.secrets.mapbox_token}
-							width="100%" height="100%" className="map"
-							onViewportChange={this.changeMapViewport}
-							mapStyle="mapbox://styles/iosifache/ck8dao8c20voi1io4kjur93v6"
-							onClick={this.chooseLocationOnMap.bind(this)}
-						>
-							{markers}
-						</ReactMapGL>
-					</div>
+				{/* Map */}
+				<div id="MapContainer">
+					<ReactMapGL
+						{...viewport}
+						mapboxApiAccessToken={all_routes_config.secrets.mapbox_token}
+						width="30vw"
+						height="100vh"
+						className="map"
+						onViewportChange={this.changeMapViewport}
+						mapStyle="mapbox://styles/iosifache/ck8dao8c20voi1io4kjur93v6"
+						onClick={this.chooseLocationOnMap.bind(this)}
+						id="map"
+					>
+						{markers}
+					</ReactMapGL>
+				</div>
 
-					{
+				{
 
-						(this.state.current_view === VIEW_VARIANTS.BIRDVIEW) ? (
+					(this.state.current_view === VIEW_VARIANTS.BIRDVIEW) ? (
 
-								<div id="TableContainer">
-
-									<Alert variant="dark">
-										<Alert.Heading>
-											{route_config.table.details.title}
-										</Alert.Heading>
-										<p>
-											{route_config.table.details.description}
-										</p>
-										<hr/>
-										<p>
-											<b>{route_config.calculator.details.note_prefix}</b>: {route_config.table.details.note}
-										</p>
-									</Alert>
-
-									<SortableTable 
-										columnNames={route_config.table.column_names} 
-										data={table_data} 
-										highlightedLinesIndexes={this.state.highlighted_lines}
-									/>
-
-								</div>
-							
-						) : (
-
-							<div id="PriceCalculator">
+							<div id="TableContainer">
 
 								<Alert variant="dark">
-										<Alert.Heading>
-											{route_config.calculator.details.title}
-										</Alert.Heading>
-										<p>
-											{route_config.calculator.details.description}
-										</p>
-										<hr/>
-										<p>
-											<b>{route_config.calculator.details.note_prefix}</b>: {route_config.calculator.details.note}
-										</p>
-									</Alert>
-
-								{/* Input fields */}
-								<VerifiedInputControl 
-									type="text" verifiedType={VERIFIED_TYPE.ALPHAS}
-									name="sector_id" 
-									value={calculator_state.sector_id.value} 
-									placeholder={route_config.calculator.inputs.labels.choosed_sector}
-									onChange={this.setNewCalculatorValue.bind(this)}
-									disabled
-								/>
-								<VerifiedInputControl 
-									type="text" verifiedType={VERIFIED_TYPE.NUMBERS}
-									name="number_of_rooms" 
-									value={calculator_state.number_of_rooms.value} 
-									placeholder={route_config.calculator.inputs.labels.number_of_rooms}
-									onChange={this.setNewCalculatorValue.bind(this)}
-								/>
-								<VerifiedInputControl 
-									type="text" verifiedType={VERIFIED_TYPE.NUMBERS}
-									name="number_of_square_meters" 
-									value={calculator_state.number_of_square_meters.value} 
-									placeholder={route_config.calculator.inputs.labels.number_of_square_meters}
-									onChange={this.setNewCalculatorValue.bind(this)}
-								/>
-
-								{/* Price Computation Button */}
-								<Button onClick={this.computeApartmentPrice.bind(this)}>
-									{route_config.calculator.buttons.compute}
-								</Button>
-
-								{/* Price result */}
-								<Alert variant="dark" show={calculator_state.result.visibility} className="PriceResult">
-									{route_config.calculator.labels.prepend}
-									<b>
-										{calculator_state.result.price}
-									</b>
-									{route_config.calculator.labels.append}
+									<Alert.Heading>
+										{route_config.table.details.title}
+									</Alert.Heading>
+									<p>
+										{route_config.table.details.description}
+									</p>
+									<hr/>
+									<p>
+										<b>{route_config.calculator.details.note_prefix}</b>: {route_config.table.details.note}
+									</p>
 								</Alert>
 
+								<SortableTable 
+									columnNames={route_config.table.column_names} 
+									data={table_data} 
+									highlightedLinesIndexes={this.state.highlighted_lines}
+								/>
+
 							</div>
+						
+					) : (
 
-						)
-					}
+						<div id="PriceCalculator">
 
-					{/* Toast notification */}
-					<ToastNotification 
-						title={this.state.toast.title} 
-						body={this.state.toast.body}
-						delay={all_routes_config.toasts.duration}
-						refreshToken={this.state.toast.refresh_token}
-						fixed={FIXED_POSITION.BOTTOM_RIGHT}
-					/>
+							<Alert variant="dark">
+									<Alert.Heading>
+										{route_config.calculator.details.title}
+									</Alert.Heading>
+									<p>
+										{route_config.calculator.details.description}
+									</p>
+									<hr/>
+									<p>
+										<b>{route_config.calculator.details.note_prefix}</b>: {route_config.calculator.details.note}
+									</p>
+								</Alert>
 
-				</MediaQuery>
+							{/* Input fields */}
+							<VerifiedInputControl 
+								type="text" verifiedType={VERIFIED_TYPE.ALPHAS}
+								name="sector_id" 
+								value={calculator_state.sector_id.value} 
+								placeholder={route_config.calculator.inputs.labels.choosed_sector}
+								onChange={this.setNewCalculatorValue.bind(this)}
+								disabled
+							/>
+							<VerifiedInputControl 
+								type="text" verifiedType={VERIFIED_TYPE.NUMBERS}
+								name="number_of_rooms" 
+								value={calculator_state.number_of_rooms.value} 
+								placeholder={route_config.calculator.inputs.labels.number_of_rooms}
+								onChange={this.setNewCalculatorValue.bind(this)}
+							/>
+							<VerifiedInputControl 
+								type="text" verifiedType={VERIFIED_TYPE.NUMBERS}
+								name="number_of_square_meters" 
+								value={calculator_state.number_of_square_meters.value} 
+								placeholder={route_config.calculator.inputs.labels.number_of_square_meters}
+								onChange={this.setNewCalculatorValue.bind(this)}
+							/>
 
-				<MediaQuery maxWidth={999}>
-					<Error type={ERROR_TYPES.RESOLUTION_NOT_ALLOWED}/>
-				</MediaQuery>
+							{/* Price Computation Button */}
+							<Button onClick={this.computeApartmentPrice.bind(this)}>
+								{route_config.calculator.buttons.compute}
+							</Button>
+
+							{/* Price result */}
+							<Alert variant="dark" show={calculator_state.result.visibility} className="PriceResult">
+								{route_config.calculator.labels.prepend}
+								<b>
+									{calculator_state.result.price}
+								</b>
+								{route_config.calculator.labels.append}
+							</Alert>
+
+						</div>
+
+					)
+				}
+
+				{/* Toast notification */}
+				<ToastNotification 
+					title={this.state.toast.title} 
+					body={this.state.toast.body}
+					delay={all_routes_config.toasts.duration}
+					refreshToken={this.state.toast.refresh_token}
+					fixed={FIXED_POSITION.BOTTOM_RIGHT}
+					id="toast"
+				/>
 
 			</div>
 		
@@ -830,6 +911,13 @@ class Dashboard extends React.Component{
 
 	}
 
+}
+
+
+// Set up the required and default props
+Dashboard.propTypes = {
+	fullName: PropTypes.string.isRequired,
+	existentAlerts: PropTypes.arrayOf(PropTypes.object).isRequired
 }
 
 // Export

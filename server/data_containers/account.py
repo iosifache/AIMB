@@ -13,7 +13,7 @@ class Account:
     email_address: str = None
     salt: str = None
     plain_password: str = None
-    alerts: list = None
+    alerts: list = []
 
     # Contructor
     def __init__(self, email_address: str, plain_password: str = None, full_name: str = None, salt: str = None, alerts: list = None) -> None:
@@ -22,7 +22,8 @@ class Account:
         self.email_address = email_address
         self.plain_password = plain_password
         self.full_name = full_name
-        self.alerts = alerts
+        if (alerts):
+            self.alerts = alerts
 
         # Create salt if it is not specified
         hash_length = DatabaseConfiguration.Databases.AIMB.Collections.Accounts.Constraints.SALT_LENGTH
@@ -32,7 +33,7 @@ class Account:
             self.salt = salt
 
     # Public method for converting the object into a dictionaries
-    def convert_to_dict(self) -> dict:
+    def convert_to_dict(self, without_alerts = False) -> dict:
 
         result = {}
         
@@ -43,7 +44,7 @@ class Account:
         if (self.plain_password):
             result["salt"] = self.salt
             result["hashed_password"] = PasswordHasher().hash_password(self.plain_password, self.salt)
-        if (self.alerts):
+        if (not without_alerts):
             result["alerts"] = self.alerts
 
         # Return

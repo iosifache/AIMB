@@ -18,7 +18,8 @@ const config = {
         },
         logo: {
             black_source: "images/logo/black.png",
-            white_source: "images/logo/white.png"
+            white_source: "images/logo/white.png",
+            alt_text: "Logo"
         },
         secrets: {
             mapbox_token: tokens.mapbox
@@ -38,7 +39,7 @@ const config = {
             default_viewport: {
                 latitude: 44.4325,
                 longitude: 26.103889,
-                zoom: 11.5
+                zoom: 10.5
             },
             pinned_locations: [
                 {
@@ -159,7 +160,7 @@ const config = {
             },
             labels: {
                 prepend: "Prețul apartamentului configurat este de ",
-                append: " de lei."
+                append: " de euro."
             }
         },
         toasts: {

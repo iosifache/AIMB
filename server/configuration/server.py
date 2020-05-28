@@ -13,6 +13,8 @@ class ServerConfiguration:
         REGISTER = "/register"
         LOGOUT = "/logout"
         GET_ALERTS = "/get_alerts"
+        CREATE_ALERT = "/create_alert"
+        REMOVE_ALERT = "/remove_alert"
         GET_SECTORS_DATA = "/get_sectors_data"
     class SessionMembers:
         LOGGED_USER_EMAIL_ADDRESS = "logged_user_email_address"

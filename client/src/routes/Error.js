@@ -52,7 +52,7 @@ class Error extends React.Component{
 
 			<div id="ErrorRoute">
                 <div class="ErrorContainer">
-				    <Image src={all_routes_config.logo.black_source}/>
+				    <Image src={all_routes_config.logo.black_source} alt={all_routes_config.logo.alt_text}/>
                     <div>
                         <b>{route_config.error_prefix}</b>: {description}
                     </div>

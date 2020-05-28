@@ -60,11 +60,10 @@ def login_route():
 def register_route():
 
     # Parameters
-    full_name = request.form.get("full_name")
-    email_address = request.form.get("email_address")
-    plain_password = request.form.get("plain_password")
     try:
-        pass
+        full_name = request.form.get("full_name")
+        email_address = request.form.get("email_address")
+        plain_password = request.form.get("plain_password")
     except:
         abort(ServerConfiguration.ErrorCodes.BAD_REQUESTS)
 
@@ -96,8 +95,23 @@ def logout():
     # Return
     return result
 
+# Route for getting datas about sectors
+@app.route(ServerConfiguration.Routes.GET_SECTORS_DATA, methods = [ServerConfiguration.Methods.GET])
+@cross_origin(supports_credentials = True)
+def get_sectors_data():
+
+    # Verify if user is logged
+    if (ServerConfiguration.SessionMembers.LOGGED_USER_EMAIL_ADDRESS not in session):
+        abort(ServerConfiguration.ErrorCodes.UNAUTHENTICATED)
+
+    # Get sectors data
+    result = request_processor.get_sectors_data()
+
+    # Return
+    return jsonify(result)
+
 # Route for getting user's alerts
-@app.route(ServerConfiguration.Routes.GET_ALERTS, methods = [ServerConfiguration.Methods.GET])
+@app.route(ServerConfiguration.Routes.GET_ALERTS, methods = [ServerConfiguration.Methods.POST])
 @cross_origin(supports_credentials = True)
 def get_alerts_route():
 
@@ -111,17 +125,51 @@ def get_alerts_route():
     # Return
     return jsonify(result)
 
-# Route for getting datas about sectors
-@app.route(ServerConfiguration.Routes.GET_SECTORS_DATA, methods = [ServerConfiguration.Methods.GET])
+# Route for creating a new alert
+@app.route(ServerConfiguration.Routes.CREATE_ALERT, methods = [ServerConfiguration.Methods.POST])
 @cross_origin(supports_credentials = True)
-def get_sectors_data():
+def create_alert():
 
     # Verify if user is logged
     if (ServerConfiguration.SessionMembers.LOGGED_USER_EMAIL_ADDRESS not in session):
         abort(ServerConfiguration.ErrorCodes.UNAUTHENTICATED)
 
+    # Parameters
+    try:
+        score_id = request.form.get("score_id")
+        sector_id = request.form.get("sector_id")
+        operation_id = request.form.get("operation_id")
+        value = request.form.get("value")
+    except:
+        abort(ServerConfiguration.ErrorCodes.BAD_REQUESTS)
+
+    # Verify parameters
+    if (not score_id or not sector_id or not operation_id or not value):
+        abort(ServerConfiguration.ErrorCodes.BAD_REQUESTS)
+
     # Get sectors data
-    result = request_processor.get_sectors_data()
+    result = request_processor.create_alert(session[ServerConfiguration.SessionMembers.LOGGED_USER_EMAIL_ADDRESS], int(score_id), int(sector_id), int(operation_id), int(value))
+
+    # Return
+    return jsonify(result)
+
+# Route for removing a new alert
+@app.route(ServerConfiguration.Routes.REMOVE_ALERT, methods = [ServerConfiguration.Methods.POST])
+@cross_origin(supports_credentials = True)
+def remove_alert():
+
+    # Verify if user is logged
+    if (ServerConfiguration.SessionMembers.LOGGED_USER_EMAIL_ADDRESS not in session):
+        abort(ServerConfiguration.ErrorCodes.UNAUTHENTICATED)
+
+    # Parameters
+    try:
+        alert_id = request.form.get("alert_id")
+    except:
+        abort(ServerConfiguration.ErrorCodes.BAD_REQUESTS)
+
+    # Get sectors data
+    result = request_processor.remove_alert(session[ServerConfiguration.SessionMembers.LOGGED_USER_EMAIL_ADDRESS], int(alert_id))
 
     # Return
     return jsonify(result)

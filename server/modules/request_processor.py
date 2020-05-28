@@ -25,7 +25,7 @@ class RequestProcessor:
 
         # Create user and get its dictionary representation
         account = Account(email_address)
-        dict_account = account.convert_to_dict()
+        dict_account = account.convert_to_dict(True)
         
         # Search his account
         result = self._database_worker.query_one(dict_account)
@@ -45,7 +45,8 @@ class RequestProcessor:
                 return {
                     "status": "success",
                     "account_details": {
-                        "full_name": result["full_name"]
+                        "full_name": result["full_name"],
+                        "alerts": result["alerts"]
                     }
                 }
 
@@ -105,9 +106,12 @@ class RequestProcessor:
     # Public method for getting alerts for one user
     def get_alerts(self, email_address: str) -> dict:
 
+        # Move to specific collection in database
+        self._database_worker.use_collection(DatabaseConfiguration.Databases.AIMB.Collections.Accounts.NAME)
+
         # Create user and get its dictionary representation
         account = Account(email_address)
-        dict_account = account.convert_to_dict()
+        dict_account = account.convert_to_dict(True)
 
         # Search the account
         result = self._database_worker.query_one(dict_account)
@@ -146,3 +150,73 @@ class RequestProcessor:
             return {
                 "sectors_data" : sectors_dict
             }
+
+    # Public method for creating an alert
+    def create_alert(self, email_address: str, score_id: int, sector_id: int, operation_id: int, value: int) -> dict:
+
+        # Move to specific collection in database
+        self._database_worker.use_collection(DatabaseConfiguration.Databases.AIMB.Collections.Accounts.NAME)
+
+        # Create user and get its dictionary representation
+        account = Account(email_address)
+        dict_account = account.convert_to_dict(True)
+
+        # Insert value
+        result = self._database_worker.update(dict_account, {
+            "$push": {
+                "alerts": {
+                    "score_id": score_id,
+                    "sector_id": sector_id,
+                    "operation_id": operation_id,
+                    "value": value
+                }
+            }
+        })
+
+         # Verify if inserted
+        if (result):
+
+            # Return
+            return {
+                "status": "success"
+            }
+
+        # Return
+        return {
+            "status": "failed"
+        }
+
+    # Public method for removing a new alert
+    def remove_alert(self, email_address: str, alert_id: int) -> dict:
+
+        # Move to specific collection in database
+        self._database_worker.use_collection(DatabaseConfiguration.Databases.AIMB.Collections.Accounts.NAME)
+
+        # Create user and get its dictionary representation
+        account = Account(email_address)
+        dict_account = account.convert_to_dict(True)
+
+        # Insert value
+        first_result = self._database_worker.update(dict_account, {
+            "$unset": {
+                "alerts." + str(alert_id): 1
+            }
+        })
+        second_result = self._database_worker.update(dict_account, {
+            "$pull": {
+                "alerts": None
+            }
+        })
+
+        # Verify if inserted
+        if (first_result and second_result):
+
+            # Return
+            return {
+                "status": "success"
+            }
+
+        # Return
+        return {
+            "status": "failed"
+        }

@@ -160,7 +160,7 @@ class VerifiedInputControl extends React.Component{
 				value={this.props.value} 
 				placeholder={this.props.placeholder} 
 				onChange={this.handleTextChange.bind(this)}
-				autoCorrect="off" autoCapitalize="off" spellCheck="false" autoComplete="off" 
+				autoCapitalize="off" spellCheck="false" autoComplete="off" 
 			/>
 
         )

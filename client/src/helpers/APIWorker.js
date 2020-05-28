@@ -77,11 +77,19 @@ class APIWorker extends React.Component{
             // Check if logged with success
             switch (data.status){
                 case "success":
-                    return LOGIN_RESULT.SUCCESS
+                    return {
+                        status: LOGIN_RESULT.SUCCESS,
+                        full_name: data.account_details.full_name,
+                        alerts: data.account_details.alerts
+                    }
                 case "invalid_credentials":
-                    return LOGIN_RESULT.INVALID_CREDENTIALS
+                    return {
+                        status: LOGIN_RESULT.INVALID_CREDENTIALS
+                    }
                 default:
-                    return LOGIN_RESULT.FAIL
+                    return {
+                        status: LOGIN_RESULT.FAIL
+                    }
             }
 
         }).catch(error => {
@@ -125,88 +133,107 @@ class APIWorker extends React.Component{
     // Method that gets the most recent datas about sectors
     getRecentSectorsData(){
 
-        // Return
-        return [
-            {
-                name: "Sector 1",
-                average_price_per_room: 3638,
-                average_price_per_square_meter: 16,
-                average_air_quality: 0,
-                score: 7
-            },
-            {
-                name: "Sector 2",
-                average_price_per_room: 6036,
-                average_price_per_square_meter: 25,
-                average_air_quality: 0,
-                score: 3
-            },
-            {
-                name: "Sector 3",
-                average_price_per_room: 7721,
-                average_price_per_square_meter: 31,
-                average_air_quality: 1,
-                score: 0
-            },
-            {
-                name: "Sector 4",
-                average_price_per_room: 8607,
-                average_price_per_square_meter: 40,
-                average_air_quality: 5,
-                score: 8
-            },
-            {
-                name: "Sector 5",
-                average_price_per_room: 7263,
-                average_price_per_square_meter: 39,
-                average_air_quality: 6,
-                score: 9
-            },
-            {
-                name: "Sector 6",
-                average_price_per_room: 1525,
-                average_price_per_square_meter: 10,
-                average_air_quality: 2,
-                score: 1
-            }
-        ]
+        // Create server request
+        return superagent.get(this.full_host + api_config.routes.get_sectors_data).withCredentials().send().then(res => {
+
+            var data = JSON.parse(res.text)
+
+            // Check if logged with success
+            return data.sectors_data
+
+        }).catch(error => {
+
+            // Log error
+            console.error(error)
+            return false
+
+        })
 
     }
 
-    // Method that gets the existent alerts of the user
-    getUsersAlerts(){
+    // Method that gets alerts
+    getAlerts(){
 
-        // Return
-        return [
-            {
-                score_id: 0,
-                sector_id: 0,
-                operation_id: 0,
-                value: 100
-            },
-            {
-                score_id: 1,
-                sector_id: 1,
-                operation_id: 1,
-                value: 200
-            }
-        ]
+        // Create server request
+        return superagent.post(this.full_host + api_config.routes.get_alerts).withCredentials().set("Content-Type", "application/x-www-form-urlencoded").send().then(res => {
+
+            var data = JSON.parse(res.text)
+
+            // Check if logged with success
+            console.log(data)
+            console.log(data.status)
+            return data.alerts
+
+        }).catch(error => {
+
+            // Log error
+            console.error(error)
+            return false
+
+        })
 
     }
 
     // Method that creates a new alert
     createAlert(score_id, sector_id, operation_id, value){
 
-        // Return
-        return true
+        // Create server request
+        return superagent.post(this.full_host + api_config.routes.create_alert).withCredentials().set("Content-Type", "application/x-www-form-urlencoded").send({
+            score_id: score_id,
+            sector_id: sector_id,
+            operation_id: operation_id,
+            value: value
+        }).then(res => {
+
+            var data = JSON.parse(res.text)
+
+            // Check if logged with success
+            console.log(data)
+            console.log(data.status)
+            switch (data.status){
+                case "success":
+                    return LOGOUT_RESULT.SUCCESS
+                default:
+                    return LOGOUT_RESULT.FAIL
+            }
+
+        }).catch(error => {
+
+            // Log error
+            console.error(error)
+            return false
+
+        })
 
     }
 
     // Method that removes an existent alert
     removeAlert(alert_id){
 
-        // Return
-        return true
+         // Create server request
+         return superagent.post(this.full_host + api_config.routes.remove_alert).withCredentials().set("Content-Type", "application/x-www-form-urlencoded").send({
+            alert_id: alert_id
+        }).then(res => {
+
+            var data = JSON.parse(res.text)
+
+            // Check if logged with success
+            console.log(data)
+            console.log(data.status)
+            switch (data.status){
+                case "success":
+                    return LOGOUT_RESULT.SUCCESS
+                default:
+                    return LOGOUT_RESULT.FAIL
+            }
+
+        }).catch(error => {
+
+            // Log error
+            console.error(error)
+            return false
+
+        })
 
     }
 

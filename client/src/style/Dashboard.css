@@ -16,6 +16,10 @@
     margin-right: 5px;
 }
 
+#DashboardRoute .navbar .nav-link svg.active{
+    color: var(--blue);
+}
+
 #DashboardRoute #MapContainer{
     height: calc(100% - 56px);
     width: 30%;
@@ -48,7 +52,6 @@
     width: 70%;
     height: calc(100% - 56px);
     float: left;
-    overflow-y: scroll;
 }
 
 #DashboardRoute #TableContainer .alert{
@@ -192,4 +195,24 @@
     height: 35px;
     border-radius: .25rem !important;
     text-align: center;
+}
+
+@media all and (max-width: 760px){
+
+    #DashboardRoute #MapContainer{
+        width: 100% !important;
+    }
+
+    #MapContainer > div{
+        width: 100% !important;
+    }
+
+    #DashboardRoute #TableContainer{
+        width: 100% !important;
+    }
+
+    #DashboardRoute  #PriceCalculator{
+        width: 100% !important;
+    }
+
 }

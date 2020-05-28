@@ -66,7 +66,11 @@ class LogGate extends React.Component{
 		},
 		redirect: {
 			needed: false,
-			link: ""
+			link: "",
+			optional_details: {
+				full_name: "",
+				alerts: []
+			}
 		},
 		toast: {
 			title: "",
@@ -165,15 +169,17 @@ class LogGate extends React.Component{
 		// Call the APIWorker's login methods
 		APIWorkerInstance.login(email, password).then(result => {
 
+			var {status, full_name, alerts} = result
+
 			// Verify the result of the request
-			switch (result){
+			switch (status){
 
 				case LOGIN_RESULT.SUCCESS:
 
 					// Launch notification and redirect
 					this.launchToastNotification(all_routes_config.toasts.titles.notification, this.state.sub_route_config.toasts.bodies.correct_credentials, () => {
 						setTimeout(() => {
-							this.redirectUser()
+							this.redirectUser(full_name, alerts)
 						}, 3000)
 					})
 					break
@@ -234,13 +240,17 @@ class LogGate extends React.Component{
 	}
 
 	// Method that redirects the user to the next page
-	redirectUser(){
+	redirectUser(full_name, alerts){
 
 		var redirect_state = this.state.redirect
 
 		redirect_state.needed = true
+		redirect_state.optional_details = {
+			full_name: full_name,
+			alerts: alerts
+		}
 		this.setState({
-			redirect: redirect_state
+			redirect: redirect_state,
 		})
 
 	}
@@ -290,7 +300,7 @@ class LogGate extends React.Component{
 				<Redirect to={
 					{
 						pathname: this.state.redirect.link,
-						state: {}
+						state: this.state.redirect.optional_details
 					}
 				}/>
 			)
@@ -325,7 +335,7 @@ class LogGate extends React.Component{
 				{/* Inputs */}
 				<Col lg={{span: 6, offset: 3}} className="FloatingContainer">
 					<FadeInAnimation>
-						<Image src={all_routes_config.logo.black_source}></Image>
+						<Image src={all_routes_config.logo.black_source} alt={all_routes_config.logo.alt_text}/>
 						{inputs}
 						<Button onClick={this.submitForm.bind(this)}>
 							{this.state.sub_route_config.button.text}

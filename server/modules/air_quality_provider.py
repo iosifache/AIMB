@@ -98,10 +98,7 @@ class AirQualityProvider:
 
 				aqi = self._get_air_quality_for_coordinates(sector.latitude, sector.longitude)
 				grade = self._convert_aqi_to_grade(aqi)
-				sector.average_air_quality = grade
-
-				# Print
-				#print("[+] New grade for {} is {}, computed by AQI {}".format(sector.name, grade, aqi))		
+				sector.average_air_quality = grade		
 
 			# Get all dictionaries into one list
 			sectors_dict = []

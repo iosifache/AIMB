@@ -1,7 +1,7 @@
 .ToastNotification{
 	position: fixed;
-	margin: 10;
-	translate: opacity 0.3s ease;
+	margin: 10px;
+	transition: opacity 0.3s ease;
 }
 
 .ToastNotification.fixedTopRight{

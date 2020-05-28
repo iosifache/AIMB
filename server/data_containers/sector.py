@@ -40,7 +40,7 @@ class Sector:
         result["average_price_per_square_meter"] = self.average_price_per_square_meter
         result["average_air_quality"] = self.average_air_quality
         if (self.score):
-            result["score"] = self.score
+            result["score"] = self.average_air_quality
 
         # Return
         return result

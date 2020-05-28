@@ -40,7 +40,7 @@ class Loading extends React.Component{
 
 					{/* Spinner effect */}
 					<FadeOutAnimation>
-						<Image src={all_routes_config.logo.black_source}/>
+						<Image src={all_routes_config.logo.black_source} alt={all_routes_config.logo.alt_text}/>
 						<Spinner animation="grow"/>
 					</FadeOutAnimation>
 
